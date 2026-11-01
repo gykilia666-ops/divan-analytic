@@ -15,7 +15,8 @@ export default function MatchesPage() {
       <h1 className="text-2xl font-bold">Матчи</h1>
       <p className="rounded border border-border bg-surface p-3 text-sm" data-testid="matches-note">
         Показаны вымышленные матчи демонстрационного набора. «Текущий момент» демо:{" "}
-        <KickoffTime iso={DEMO_NOW} />. Фильтры, коэффициенты и прогнозы появятся на следующих этапах.
+        <KickoffTime iso={DEMO_NOW} />. Фильтры, коэффициенты и прогнозы появятся на следующих
+        этапах.
       </p>
       <ul className="grid gap-3 sm:grid-cols-2">
         {sorted.map((m) => (

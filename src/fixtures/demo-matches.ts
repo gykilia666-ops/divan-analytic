@@ -143,5 +143,9 @@ export type ProviderFaultFixture =
 export const PROVIDER_FAULTS: readonly ProviderFaultFixture[] = [
   { kind: "RATE_LIMITED", httpStatus: 429, retryAfterSeconds: 42 },
   { kind: "TIMEOUT", afterMs: 10_000 },
-  { kind: "PARTIAL_INVALID_RESPONSE", validMatchIds: ["demo-001", "demo-003"], invalidItemCount: 2 },
+  {
+    kind: "PARTIAL_INVALID_RESPONSE",
+    validMatchIds: ["demo-001", "demo-003"],
+    invalidItemCount: 2,
+  },
 ];

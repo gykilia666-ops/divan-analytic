@@ -27,10 +27,10 @@ npm run e2e          # поднимает `next start` на порту 3100 в �
 
 ## Режимы окружения
 
-| Переменная                  | Значения                    | По умолчанию |
-| --------------------------- | --------------------------- | ------------ |
-| `APP_DATA_MODE`             | `demo` / `connected`        | `demo`       |
-| `SPORTS_PROVIDER`           | `fixtures` / `football-data`| `fixtures`   |
+| Переменная        | Значения                     | По умолчанию |
+| ----------------- | ---------------------------- | ------------ |
+| `APP_DATA_MODE`   | `demo` / `connected`         | `demo`       |
+| `SPORTS_PROVIDER` | `fixtures` / `football-data` | `fixtures`   |
 
 - `demo` не требует никаких ключей и допускает только `fixtures`.
 - `connected` требует Supabase, `APP_ORIGIN` и отдельный `CRON_SECRET` (≥ 32 символов).

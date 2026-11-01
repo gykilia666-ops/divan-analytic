@@ -32,7 +32,11 @@ describe("parseEnv: demo", () => {
     expect(parseEnv({ APP_DATA_MODE: "", SPORTS_PROVIDER: "" }).APP_DATA_MODE).toBe("demo");
   });
   it("demo + football-data — противоречие", () => {
-    const p = problemsOf({ APP_DATA_MODE: "demo", SPORTS_PROVIDER: "football-data", FOOTBALL_DATA_API_KEY: "k" });
+    const p = problemsOf({
+      APP_DATA_MODE: "demo",
+      SPORTS_PROVIDER: "football-data",
+      FOOTBALL_DATA_API_KEY: "k",
+    });
     expect(p.join("\n")).toMatch(/SPORTS_PROVIDER/);
   });
   it("неизвестный режим отклоняется", () => {
@@ -47,9 +51,13 @@ describe("parseEnv: connected", () => {
   it("требует Supabase, APP_ORIGIN и CRON_SECRET", () => {
     const p = problemsOf({ APP_DATA_MODE: "connected" }).join("\n");
     for (const k of [
-      "APP_ORIGIN", "NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
-      "SUPABASE_SERVICE_ROLE_KEY", "CRON_SECRET",
-    ]) expect(p).toContain(k);
+      "APP_ORIGIN",
+      "NEXT_PUBLIC_SUPABASE_URL",
+      "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
+      "SUPABASE_SERVICE_ROLE_KEY",
+      "CRON_SECRET",
+    ])
+      expect(p).toContain(k);
   });
   it("CRON_SECRET короче 32 символов отклоняется", () => {
     expect(problemsOf({ ...connected, CRON_SECRET: "short" }).join("\n")).toMatch(/CRON_SECRET/);
@@ -66,7 +74,11 @@ describe("parseEnv: football-data", () => {
     expect(p).toMatch(/FOOTBALL_DATA_API_KEY/);
   });
   it("с ключом проходит", () => {
-    const env = parseEnv({ ...connected, SPORTS_PROVIDER: "football-data", FOOTBALL_DATA_API_KEY: "tok" });
+    const env = parseEnv({
+      ...connected,
+      SPORTS_PROVIDER: "football-data",
+      FOOTBALL_DATA_API_KEY: "tok",
+    });
     expect(env.SPORTS_PROVIDER).toBe("football-data");
   });
 });
@@ -84,7 +96,9 @@ describe("parseEnv: безопасность", () => {
       problemsOf({ ...connected, CRON_SECRET: SECRET.slice(0, 10) }),
       problemsOf({ NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY: SECRET }),
       problemsOf({ APP_DATA_MODE: SECRET }),
-    ].flat().join("\n");
+    ]
+      .flat()
+      .join("\n");
     expect(messages).not.toContain(SECRET);
     expect(messages).not.toContain(SECRET.slice(0, 10));
   });

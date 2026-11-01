@@ -1,6 +1,11 @@
 "use client";
 
-export default function GlobalError({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
+export default function GlobalError({
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
   return (
     <div role="alert" className="space-y-3">
       <h1 className="text-2xl font-bold">Что-то пошло не так</h1>

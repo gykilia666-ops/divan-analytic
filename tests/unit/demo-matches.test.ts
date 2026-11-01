@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { DEMO_MATCHES, DEMO_NOW, PROVIDER_FAULTS, type FixtureScenario } from "@/fixtures/demo-matches";
+import {
+  DEMO_MATCHES,
+  DEMO_NOW,
+  PROVIDER_FAULTS,
+  type FixtureScenario,
+} from "@/fixtures/demo-matches";
 
 const byScenario = (s: FixtureScenario) => {
   const found = DEMO_MATCHES.find((m) => m.scenario === s);
@@ -15,15 +20,26 @@ describe("demo fixtures (CLAUDE.md §15.3)", () => {
 
   it("покрывает все обязательные матчевые сценарии", () => {
     const required: FixtureScenario[] = [
-      "UPCOMING", "CLOSING_SOON", "HOME_WIN", "AWAY_WIN", "DRAW", "CANCELLED", "POSTPONED",
-      "SUSPENDED", "NULL_SCORE", "AMBIGUOUS_RESULT", "RESULT_CHANGED_AFTER_SETTLEMENT", "STALE_DATA",
+      "UPCOMING",
+      "CLOSING_SOON",
+      "HOME_WIN",
+      "AWAY_WIN",
+      "DRAW",
+      "CANCELLED",
+      "POSTPONED",
+      "SUSPENDED",
+      "NULL_SCORE",
+      "AMBIGUOUS_RESULT",
+      "RESULT_CHANGED_AFTER_SETTLEMENT",
+      "STALE_DATA",
     ];
     const present = new Set(DEMO_MATCHES.map((m) => m.scenario));
     for (const s of required) expect(present.has(s), s).toBe(true);
   });
 
   it("матч «через 3 минуты» отстоит от якоря ровно на 3 минуты", () => {
-    const diff = new Date(byScenario("CLOSING_SOON").kickoffAt).getTime() - new Date(DEMO_NOW).getTime();
+    const diff =
+      new Date(byScenario("CLOSING_SOON").kickoffAt).getTime() - new Date(DEMO_NOW).getTime();
     expect(diff).toBe(3 * 60_000);
   });
 
@@ -56,7 +72,9 @@ describe("demo fixtures (CLAUDE.md §15.3)", () => {
 
   it("сбои поставщика: 429, timeout, частично некорректный ответ", () => {
     expect(PROVIDER_FAULTS.map((f) => f.kind)).toEqual([
-      "RATE_LIMITED", "TIMEOUT", "PARTIAL_INVALID_RESPONSE",
+      "RATE_LIMITED",
+      "TIMEOUT",
+      "PARTIAL_INVALID_RESPONSE",
     ]);
   });
 });

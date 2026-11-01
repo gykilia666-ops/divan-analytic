@@ -38,7 +38,8 @@
   --color-accent-fg: var(--accent-fg);
   --color-warn-bg: var(--warn-bg);
   --color-warn-fg: var(--warn-fg);
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 body {

@@ -17,7 +17,9 @@ export default function HomePage() {
           Учебный симулятор прогнозов на футбол: виртуальные монеты, демонстрационные коэффициенты и
           честный расчёт. Аналитика уровня «смотрел обзор».
         </p>
-        <p className="max-w-2xl rounded border border-border bg-surface p-3 text-sm">{DISCLAIMER}</p>
+        <p className="max-w-2xl rounded border border-border bg-surface p-3 text-sm">
+          {DISCLAIMER}
+        </p>
         <div className="flex flex-wrap gap-3">
           <Link
             href="/matches"
@@ -45,8 +47,8 @@ export default function HomePage() {
           ))}
         </ol>
         <p className="mt-4 text-sm text-muted">
-          Статус разработки: сейчас доступен каркас и демонстрационный список матчей. Прогнозы, вход и
-          рейтинг включаются по этапам.
+          Статус разработки: сейчас доступен каркас и демонстрационный список матчей. Прогнозы, вход
+          и рейтинг включаются по этапам.
         </p>
       </section>
     </div>
