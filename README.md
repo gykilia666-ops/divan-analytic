@@ -55,3 +55,20 @@ tests/e2e/          Playwright
 - shadcn/ui не подключён (добавим `npx shadcn@latest init`, когда появятся формы и купон).
 - CSP не настроен (этап 10, вместе с OAuth).
 - Шаг `npm audit` в CI информационный: политика не согласована.
+
+## База данных (локальный Supabase, этап 2)
+
+Нужны Docker Desktop (запущенный) и Supabase CLI (ставится как devDependency).
+
+```bash
+npx supabase init            # один раз: создаст supabase/config.toml (VS Code settings — "n")
+npm run db:start             # первый запуск скачивает образы (несколько минут)
+npm run db:reset             # применяет все миграции с нуля
+npm run db:test              # pgTAP: ограничения, RLS, инициализация кошелька
+npm run test:integration     # конкурентность (20 параллельных вызовов)
+npm run db:stop
+```
+
+Миграции лежат в `supabase/migrations`, SQL-тесты — в `supabase/tests/database`.
+Права по умолчанию отозваны у `anon` и `authenticated`: каждая новая таблица и функция
+получает grants явно (см. комментарий в `20261102000004_rls_grants.sql`).
