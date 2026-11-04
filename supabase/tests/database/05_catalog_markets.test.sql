@@ -189,5 +189,14 @@ select is(
 );
 reset role;
 
+-- ======================================================= область «можно сделать прогноз»
+set local role anon;
+select is(
+  (select array_agg(provider_id) from public.list_matches('pgtap-c', p_scope => 'open')),
+  array['m1'],
+  'open: только открытый рынок запланированного матча с запасом > 5 минут'
+);
+reset role;
+
 select * from finish();
 rollback;

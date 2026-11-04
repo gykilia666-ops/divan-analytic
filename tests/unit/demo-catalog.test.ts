@@ -10,13 +10,20 @@ const byScenario = (s: string) => {
 };
 
 describe("getDemoCatalog", () => {
-  it("по умолчанию — все 12 матчей по времени начала", () => {
-    const page = getDemoCatalog(parseCatalogQuery({}));
+  it("«Все» — 12 матчей по времени начала", () => {
+    const page = getDemoCatalog(parseCatalogQuery({ scope: "all" }));
     expect(page.items).toHaveLength(12);
     const times = page.items.map((m) => m.kickoffAt);
     expect(times).toEqual([...times].sort());
     expect(page.nextCursor).toBeNull();
     expect(page.source).toBe("demo");
+  });
+
+  it("по умолчанию — только матчи, на которые можно сделать прогноз", () => {
+    const ids = getDemoCatalog(parseCatalogQuery({})).items.map((m) => m.id);
+    // Предстоящий и с устаревшими данными (временное состояние); без «через 3 минуты»,
+    // перенесенного, прерванного и завершенных.
+    expect(ids).toEqual(["demo-012", "demo-001"]);
   });
 
   it("предстоящие и завершенные", () => {
@@ -29,7 +36,9 @@ describe("getDemoCatalog", () => {
   });
 
   it("фильтр по дате считается в выбранной зоне", () => {
-    const krsk = getDemoCatalog(parseCatalogQuery({ date: "2026-10-26", tz: "Asia/Krasnoyarsk" }));
+    const krsk = getDemoCatalog(
+      parseCatalogQuery({ date: "2026-10-26", tz: "Asia/Krasnoyarsk", scope: "all" }),
+    );
     expect(krsk.items.map((m) => m.id).sort()).toEqual([
       "demo-002",
       "demo-008",
@@ -37,7 +46,9 @@ describe("getDemoCatalog", () => {
       "demo-010",
       "demo-012",
     ]);
-    const tomorrowUtc = getDemoCatalog(parseCatalogQuery({ date: "2026-10-27", tz: "UTC" }));
+    const tomorrowUtc = getDemoCatalog(
+      parseCatalogQuery({ date: "2026-10-27", tz: "UTC", scope: "all" }),
+    );
     expect(tomorrowUtc.items.map((m) => m.id)).toEqual(["demo-007"]);
   });
 
@@ -50,7 +61,9 @@ describe("getDemoCatalog", () => {
     let cursor: string | null = null;
     let pages = 0;
     do {
-      const page = getDemoCatalog(parseCatalogQuery({ limit: "5", ...(cursor ? { cursor } : {}) }));
+      const page = getDemoCatalog(
+        parseCatalogQuery({ scope: "all", limit: "5", ...(cursor ? { cursor } : {}) }),
+      );
       seen.push(...page.items.map((m) => m.id));
       cursor = page.nextCursor;
       pages += 1;

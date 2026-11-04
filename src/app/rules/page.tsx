@@ -8,8 +8,8 @@ export default function RulesPage() {
     <article className="max-w-2xl space-y-4">
       <h1 className="text-2xl font-bold">Правила</h1>
       <p className="rounded border border-border bg-surface p-3 text-sm">
-        Прогнозы пока не включены: приложение в разработке. Ниже — правила, по которым они будут
-        работать.
+        Прогнозы принимаются после входа через GitHub. Расчет результатов включается на следующем
+        этапе разработки; до этого принятые прогнозы ожидают результата.
       </p>
       <p>{DISCLAIMER}</p>
       <ul className="list-disc space-y-2 pl-6">

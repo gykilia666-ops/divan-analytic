@@ -1,7 +1,12 @@
 import type { CatalogQuery } from "@/server/catalog/types";
 import { TimezoneSelect } from "./timezone-select";
 
-const SCOPE_LABEL = { all: "Все", upcoming: "Предстоящие", finished: "Завершённые" } as const;
+const SCOPE_LABEL = {
+  open: "Можно сделать прогноз",
+  upcoming: "Все предстоящие",
+  finished: "Завершённые",
+  all: "Все",
+} as const;
 
 /** Обычная GET-форма: работает без JavaScript, состояние фильтров — в адресе страницы. */
 export function CatalogFilters({

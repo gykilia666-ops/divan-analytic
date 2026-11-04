@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getEnv } from "@/lib/env";
 import { safeNextPath } from "@/lib/safe-redirect";
-import { getCurrentUser } from "@/server/auth/session";
+import { getCurrentProfile } from "@/server/auth/session";
 
 export const metadata: Metadata = { title: "Вход" };
 
@@ -12,6 +12,14 @@ const ERRORS: Record<string, string> = {
   disabled: "Этот аккаунт отключён.",
   init: "Не удалось подготовить аккаунт. Попробуйте позже.",
 };
+
+async function loadProfile() {
+  try {
+    return await getCurrentProfile();
+  } catch {
+    return null;
+  }
+}
 
 export default async function LoginPage({
   searchParams,
@@ -34,7 +42,10 @@ export default async function LoginPage({
     );
   }
 
-  if (await getCurrentUser()) redirect(next);
+  // Подписанный токен еще не значит, что аккаунт существует: после удаления пользователя
+  // (или сбоя инициализации) старая cookie остается валидной. Перенаправляем только при наличии
+  // профиля, иначе показываем вход — новый вход заменит устаревшую сессию.
+  if (await loadProfile()) redirect(next);
 
   return (
     <div className="max-w-xl space-y-4">

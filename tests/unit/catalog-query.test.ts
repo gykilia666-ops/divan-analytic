@@ -26,7 +26,7 @@ describe("parseCatalogQuery", () => {
       competition: null,
       date: null,
       timeZone: "UTC",
-      scope: "all",
+      scope: "open",
       cursor: null,
       limit: 20,
     });
@@ -60,7 +60,7 @@ describe("parseCatalogQuery", () => {
       null,
       null,
       "UTC",
-      "all",
+      "open",
       null,
       20,
     ]);

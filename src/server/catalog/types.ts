@@ -1,7 +1,8 @@
 import type { Acceptance, MarketStatus, MatchStatus } from "@/domain/markets/acceptance";
 import type { OddsMilli } from "@/domain/odds/demo-odds";
 
-export const CATALOG_SCOPES = ["all", "upcoming", "finished"] as const;
+/** open — можно сделать прогноз (по умолчанию); upcoming — не завершенные; finished; all. */
+export const CATALOG_SCOPES = ["open", "upcoming", "finished", "all"] as const;
 export type CatalogScope = (typeof CATALOG_SCOPES)[number];
 
 export interface CatalogQuery {

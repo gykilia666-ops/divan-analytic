@@ -5,8 +5,19 @@ import { expect, test } from "@playwright/test";
 const card = (page: import("@playwright/test").Page, name: string) =>
   page.getByRole("listitem", { name });
 
-test("карточки показывают коэффициенты и состояние приема", async ({ page }) => {
+test("по умолчанию — только матчи, на которые можно сделать прогноз", async ({ page }) => {
   await page.goto("/matches");
+  await expect(page.getByTestId("match-card")).toHaveCount(2);
+  for (const reason of await page
+    .getByTestId("acceptance")
+    .evaluateAll((els) => els.map((el) => el.getAttribute("data-reason")))) {
+    expect(["OPEN", "STALE"]).toContain(reason);
+  }
+  await expect(page.getByText("Статус: Завершён")).toHaveCount(0);
+});
+
+test("карточки показывают коэффициенты и состояние приема", async ({ page }) => {
+  await page.goto("/matches?scope=all");
   const upcoming = card(page, "Сибирский Север — Енисей-Резерв");
   await expect(upcoming.getByTestId("odds-home")).toHaveText(/^\d+\.\d{2}$/);
   await expect(upcoming.getByTestId("acceptance")).toHaveAttribute("data-reason", "OPEN");
@@ -44,7 +55,7 @@ test("форма фильтров работает без ручного вво�
 });
 
 test("выбранная зона Asia/Krasnoyarsk: время и фильтр даты в ней", async ({ page }) => {
-  await page.goto("/matches?tz=Asia%2FKrasnoyarsk&date=2026-10-26");
+  await page.goto("/matches?tz=Asia%2FKrasnoyarsk&date=2026-10-26&scope=all");
   await expect(page.getByTestId("timezone-label")).toContainText("Asia/Krasnoyarsk");
   await expect(page.getByTestId("match-card")).toHaveCount(5);
   await expect(page.locator("time").first()).toContainText("(Asia/Krasnoyarsk)");
@@ -54,12 +65,12 @@ test("пустой результат и сброс фильтров", async ({ 
   await page.goto("/matches?date=2030-01-01");
   await expect(page.getByTestId("matches-empty")).toBeVisible();
   await page.getByRole("link", { name: "Сбросить фильтры" }).click();
-  await expect(page.getByTestId("match-card")).toHaveCount(12);
+  await expect(page.getByTestId("match-card")).toHaveCount(2);
 });
 
 test("пагинация", async ({ page }) => {
   const cards = page.getByTestId("match-card");
-  await page.goto("/matches?limit=5");
+  await page.goto("/matches?scope=all&limit=5");
   await expect(cards).toHaveCount(5);
   const firstOfPage1 = await cards.first().getAttribute("aria-label");
 

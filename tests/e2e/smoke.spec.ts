@@ -7,10 +7,12 @@ test("главная: назначение, дисклеймер, демо-ме�
   await expect(page.getByTestId("mode-banner")).toContainText("ДЕМО-РЕЖИМ");
 });
 
-test("переход на матчи: все 12 демо-сценариев, статус текстом", async ({ page }) => {
+test("переход на матчи; «Все» — 12 демо-сценариев, статус текстом", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("link", { name: "Посмотреть матчи" }).click();
   await expect(page).toHaveURL(/\/matches$/);
+  await expect(page.getByTestId("match-card").first()).toBeVisible();
+  await page.goto("/matches?scope=all");
   await expect(page.getByTestId("match-card")).toHaveCount(12);
   await expect(page.getByText("Статус: Отменён")).toBeVisible();
   // Зона времени указана явно (после гидратации — зона браузера).

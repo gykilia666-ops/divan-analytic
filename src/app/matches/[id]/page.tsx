@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatOdds } from "@/domain/odds/demo-odds";
+import { BetPanel } from "@/components/betting/bet-panel";
 import { AcceptanceNote } from "@/components/matches/acceptance-note";
 import { KickoffTime } from "@/components/matches/kickoff-time";
 import { MATCH_STATUS_LABEL, OUTCOME_LABEL } from "@/components/matches/labels";
@@ -100,9 +101,7 @@ export default async function MatchPage({ params, searchParams }: Props) {
             сумму прогноза.
           </p>
         ) : null}
-        <p className="rounded border border-border bg-surface p-3 text-sm">
-          Купон для прогноза появится на следующем этапе разработки.
-        </p>
+        <BetPanel match={match} />
       </section>
 
       {match.note ? <p className="text-sm text-muted">Сценарий демо: {match.note}</p> : null}

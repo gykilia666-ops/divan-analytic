@@ -71,6 +71,11 @@ export function getDemoCatalog(query: CatalogQuery, now: string = DEMO_NOW): Cat
     items = items.filter((m) => m.kickoffAt >= from && m.kickoffAt < to);
   }
   const done = (m: CatalogMatch) => m.status === "FINISHED" || m.status === "CANCELLED";
+  // «Можно сделать прогноз»: рынок открыт, матч запланирован, до старта больше 5 минут.
+  // Устаревшие данные не скрывают матч (временное состояние), карточка предупреждает о них.
+  if (query.scope === "open") {
+    items = items.filter((m) => m.acceptance.reason === "OPEN" || m.acceptance.reason === "STALE");
+  }
   if (query.scope === "upcoming") items = items.filter((m) => !done(m));
   if (query.scope === "finished") items = items.filter(done);
 

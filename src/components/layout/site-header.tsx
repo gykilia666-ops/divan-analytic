@@ -40,6 +40,11 @@ export async function SiteHeader() {
             {profile ? (
               <>
                 <li>
+                  <Link href="/my/bets" className="underline-offset-4 hover:underline">
+                    Мои прогнозы
+                  </Link>
+                </li>
+                <li>
                   <Link href="/my/wallet" className="underline-offset-4 hover:underline">
                     Кошелёк
                   </Link>
