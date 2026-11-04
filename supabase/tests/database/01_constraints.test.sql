@@ -11,14 +11,14 @@ insert into public.wallets (user_id, balance) values
   ('00000000-0000-4000-8000-00000000000a', 0);
 
 insert into public.competitions (id, provider, provider_id, code, name, enabled) values
-  ('c0000000-0000-4000-8000-000000000001', 'fixtures', '1', 'LD', 'Лига Дивана', true);
+  ('c0000000-0000-4000-8000-000000000001', 'pgtap', '1', 'LD', 'Лига Дивана', true);
 insert into public.teams (id, provider, provider_id, name) values
-  ('e1000000-0000-4000-8000-000000000001', 'fixtures', '1', 'Красный Диван'),
-  ('e1000000-0000-4000-8000-000000000002', 'fixtures', '2', 'Пикник-Сити');
+  ('e1000000-0000-4000-8000-000000000001', 'pgtap', '1', 'Красный Диван'),
+  ('e1000000-0000-4000-8000-000000000002', 'pgtap', '2', 'Пикник-Сити');
 insert into public.matches (id, provider, provider_id, competition_id, home_team_id, away_team_id, kickoff_at, status) values
-  ('f1000000-0000-4000-8000-000000000001', 'fixtures', '1', 'c0000000-0000-4000-8000-000000000001',
+  ('f1000000-0000-4000-8000-000000000001', 'pgtap', '1', 'c0000000-0000-4000-8000-000000000001',
    'e1000000-0000-4000-8000-000000000001', 'e1000000-0000-4000-8000-000000000002', '2026-11-10T15:00:00Z', 'SCHEDULED'),
-  ('f1000000-0000-4000-8000-000000000002', 'fixtures', '2', 'c0000000-0000-4000-8000-000000000001',
+  ('f1000000-0000-4000-8000-000000000002', 'pgtap', '2', 'c0000000-0000-4000-8000-000000000001',
    'e1000000-0000-4000-8000-000000000002', 'e1000000-0000-4000-8000-000000000001', '2026-11-11T15:00:00Z', 'SCHEDULED');
 insert into public.markets (id, match_id, type, status, quote_version, model_version, home_odds_milli, draw_odds_milli, away_odds_milli) values
   ('d1000000-0000-4000-8000-000000000001', 'f1000000-0000-4000-8000-000000000001', 'MATCH_RESULT_1X2', 'OPEN', 1, 'demo-v1', 2350, 3100, 2900),

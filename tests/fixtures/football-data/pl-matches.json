@@ -1,0 +1,80 @@
+{
+  "_source": "Форма и значения взяты из ответа football-data v4 от 2026-11-04 (scripts/probe-football-data.mjs). id команд и shortName — условные: probe их не выводил.",
+  "filters": { "season": "2026" },
+  "resultSet": { "count": 6 },
+  "competition": { "id": 2021, "name": "Premier League", "code": "PL", "type": "LEAGUE" },
+  "matches": [
+    {
+      "id": 560634,
+      "utcDate": "2026-11-06T20:00:00Z",
+      "status": "TIMED",
+      "stage": "REGULAR_SEASON",
+      "lastUpdated": "2026-11-04T00:20:29Z",
+      "competition": { "id": 2021, "name": "Premier League", "code": "PL", "type": "LEAGUE" },
+      "homeTeam": { "id": 62, "name": "Everton FC", "shortName": "Everton" },
+      "awayTeam": { "id": 1076, "name": "Coventry City FC", "shortName": "Coventry" },
+      "score": {
+        "winner": null,
+        "duration": "REGULAR",
+        "fullTime": { "home": null, "away": null },
+        "halfTime": { "home": null, "away": null }
+      }
+    },
+    {
+      "id": 560612,
+      "utcDate": "2026-10-25T14:00:00Z",
+      "status": "FINISHED",
+      "stage": "REGULAR_SEASON",
+      "lastUpdated": "2026-11-04T00:20:29Z",
+      "competition": { "id": 2021, "name": "Premier League", "code": "PL", "type": "LEAGUE" },
+      "homeTeam": { "id": 64, "name": "Liverpool FC", "shortName": "Liverpool" },
+      "awayTeam": { "id": 397, "name": "Brighton & Hove Albion FC", "shortName": "Brighton Hove" },
+      "score": {
+        "winner": "HOME_TEAM",
+        "duration": "REGULAR",
+        "fullTime": { "home": 2, "away": 0 },
+        "halfTime": { "home": 2, "away": 0 }
+      }
+    },
+    {
+      "id": 560613,
+      "utcDate": "2026-10-25T14:00:00Z",
+      "status": "FINISHED",
+      "stage": "REGULAR_SEASON",
+      "lastUpdated": "2026-11-04T00:20:29Z",
+      "competition": { "id": 2021, "name": "Premier League", "code": "PL", "type": "LEAGUE" },
+      "homeTeam": { "id": 354, "name": "Crystal Palace FC", "shortName": "Crystal Palace" },
+      "awayTeam": { "id": 67, "name": "Newcastle United FC", "shortName": "Newcastle" },
+      "score": {
+        "winner": "AWAY_TEAM",
+        "duration": "REGULAR",
+        "fullTime": { "home": 0, "away": 2 },
+        "halfTime": { "home": 0, "away": 0 }
+      }
+    },
+    {
+      "id": 999001,
+      "utcDate": "2026-11-07T15:00:00",
+      "status": "TIMED",
+      "homeTeam": { "id": 1, "name": "Время без зоны" },
+      "awayTeam": { "id": 2, "name": "Должно отброситься" },
+      "score": { "duration": "REGULAR", "fullTime": { "home": null, "away": null } }
+    },
+    {
+      "id": 999002,
+      "utcDate": "2026-11-07T15:00:00Z",
+      "status": "SOMETHING_NEW",
+      "homeTeam": { "id": 3, "name": "Неизвестный статус" },
+      "awayTeam": { "id": 4, "name": "Должно отброситься" },
+      "score": { "duration": "REGULAR", "fullTime": { "home": null, "away": null } }
+    },
+    {
+      "id": 999003,
+      "utcDate": "2026-11-07T15:00:00Z",
+      "status": "FINISHED",
+      "homeTeam": { "id": 5, "name": "Отрицательный счет" },
+      "awayTeam": { "id": 6, "name": "Должно отброситься" },
+      "score": { "duration": "REGULAR", "fullTime": { "home": -1, "away": 0 } }
+    }
+  ]
+}

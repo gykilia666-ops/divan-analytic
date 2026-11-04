@@ -1,4 +1,5 @@
 -- RLS, grants и прямой доступ в обход Next.js (CLAUDE.md §13). Роли переключаются как в PostgREST.
+-- Подсчеты ограничены своими строками: в локальной БД могут быть данные синхронизации и интеграционных тестов.
 begin;
 create extension if not exists pgtap with schema extensions;
 select no_plan();
@@ -9,12 +10,12 @@ insert into auth.users (id, email, raw_user_meta_data) values
 
 -- публичные данные и прогноз пользователя B (создаем от postgres)
 insert into public.competitions (id, provider, provider_id, code, name, enabled) values
-  ('c0000000-0000-4000-8000-000000000001', 'fixtures', '1', 'LD', 'Лига Дивана', true);
+  ('c0000000-0000-4000-8000-000000000001', 'pgtap', '1', 'LD', 'Лига Дивана', true);
 insert into public.teams (id, provider, provider_id, name) values
-  ('e1000000-0000-4000-8000-000000000001', 'fixtures', '1', 'Красный Диван'),
-  ('e1000000-0000-4000-8000-000000000002', 'fixtures', '2', 'Пикник-Сити');
+  ('e1000000-0000-4000-8000-000000000001', 'pgtap', '1', 'Красный Диван'),
+  ('e1000000-0000-4000-8000-000000000002', 'pgtap', '2', 'Пикник-Сити');
 insert into public.matches (id, provider, provider_id, competition_id, home_team_id, away_team_id, kickoff_at, status) values
-  ('f1000000-0000-4000-8000-000000000001', 'fixtures', '1', 'c0000000-0000-4000-8000-000000000001',
+  ('f1000000-0000-4000-8000-000000000001', 'pgtap', '1', 'c0000000-0000-4000-8000-000000000001',
    'e1000000-0000-4000-8000-000000000001', 'e1000000-0000-4000-8000-000000000002', '2026-11-10T15:00:00Z', 'SCHEDULED');
 insert into public.markets (id, match_id, type, quote_version, model_version, home_odds_milli, draw_odds_milli, away_odds_milli) values
   ('d1000000-0000-4000-8000-000000000001', 'f1000000-0000-4000-8000-000000000001', 'MATCH_RESULT_1X2', 1, 'demo-v1', 2350, 3100, 2900);
@@ -42,8 +43,8 @@ select is((select count(*) from public.wallets), 1::bigint, 'A видит тол
 select is((select balance from public.wallets), 10000::bigint, 'стартовый баланс A = 10000');
 select is((select count(*) from public.wallet_entries), 1::bigint, 'A видит только свой журнал');
 select is((select count(*) from public.bets), 0::bigint, 'A не видит прогноз B');
-select is((select count(*) from public.matches), 1::bigint, 'матчи публичны');
-select is((select count(*) from public.markets), 1::bigint, 'рынки публичны');
+select is((select count(*) from public.matches where provider = 'pgtap'), 1::bigint, 'матчи публичны');
+select is((select count(*) from public.markets where id = 'd1000000-0000-4000-8000-000000000001'), 1::bigint, 'рынки публичны');
 
 select throws_ok($$ update public.wallets set balance = 999999 $$, '42501', null,
   'A не может напрямую менять кошелек');
@@ -95,8 +96,8 @@ reset role;
 -- ======================================================= гость
 set local role anon;
 set local request.jwt.claims = '{"role":"anon"}';
-select is((select count(*) from public.matches), 1::bigint, 'гость видит матчи');
-select is((select count(*) from public.markets), 1::bigint, 'гость видит рынки');
+select is((select count(*) from public.matches where provider = 'pgtap'), 1::bigint, 'гость видит матчи');
+select is((select count(*) from public.markets where id = 'd1000000-0000-4000-8000-000000000001'), 1::bigint, 'гость видит рынки');
 select throws_ok($$ select * from public.wallets $$, '42501', null, 'гость не читает кошельки');
 select throws_ok($$ select * from public.bets $$, '42501', null, 'гость не читает прогнозы');
 select throws_ok($$ select * from public.profiles $$, '42501', null, 'гость не читает профили');

@@ -83,3 +83,21 @@ npm run db:stop
   `POST /auth/signout` — выход.
 - Защищенные страницы и API проверяют пользователя на сервере через `getClaims()`.
 - В режиме demo вход отключен, эндпоинты отвечают 503/404.
+
+## Синхронизация матчей (этап 4)
+
+Поставщик выбирается `SPORTS_PROVIDER`: `fixtures` (без сети, по умолчанию) или `football-data`
+(нужен `FOOTBALL_DATA_API_KEY` и режим `connected`). Соревнования MVP: PL, BL1, PD.
+
+Ручной запуск (локально, при запущенном `npm run dev` и локальном Supabase):
+
+```powershell
+$secret = (Select-String -Path .env.local -Pattern '^CRON_SECRET=(.+)$').Matches[0].Groups[1].Value
+Invoke-RestMethod -Method Post -Uri http://localhost:3000/api/internal/jobs/sync `
+  -Headers @{ Authorization = "Bearer $secret" } | ConvertTo-Json -Depth 5
+```
+
+- Один запрос на соревнование, общий лимитер в БД (≤ 8 запросов в минуту), 429 сохраняет паузу.
+- Повторный импорт не создает дубликатов; более старые данные не перезаписывают более новые.
+- Сбой поставщика не трогает уже сохраненные матчи.
+- CI внешний API не вызывает: тесты используют fixtures и сохраненную форму ответа.
