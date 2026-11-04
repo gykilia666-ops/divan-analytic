@@ -143,6 +143,12 @@ if ($dockerOk) {
   $results["database"] = "SKIPPED (Docker not running)"
 }
 
+# Stale .next/types can reference routes that were moved or removed; the build recreates them.
+if (Test-Path (Join-Path $root ".next")) {
+  Remove-Item -Recurse -Force (Join-Path $root ".next") -ErrorAction SilentlyContinue
+  Write-Log "removed stale .next build output"
+}
+
 Run-Step "check (format, lint, typecheck, unit)" { npm run check } | Out-Null
 $built = Run-Step "build" { npm run build }
 Run-Step "e2e" { npm run e2e } | Out-Null

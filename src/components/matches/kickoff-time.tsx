@@ -9,7 +9,9 @@ const getBrowserZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
 // затем React переключается на зону браузера. Зона всегда указана в тексте.
 const getServerZone = () => "UTC";
 
-export function KickoffTime({ iso }: { iso: string }) {
-  const zone = useSyncExternalStore(subscribe, getBrowserZone, getServerZone);
+/** Время с явной зоной. Если зона выбрана пользователем — используется она, иначе зона браузера. */
+export function KickoffTime({ iso, timeZone }: { iso: string; timeZone?: string | null }) {
+  const browserZone = useSyncExternalStore(subscribe, getBrowserZone, getServerZone);
+  const zone = timeZone ?? browserZone;
   return <time dateTime={iso}>{formatKickoff(iso, zone)}</time>;
 }
