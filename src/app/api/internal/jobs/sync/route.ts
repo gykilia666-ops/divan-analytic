@@ -1,10 +1,10 @@
 import type { NextRequest } from "next/server";
 import { getEnv } from "@/lib/env";
-import { createSupabaseSyncStore } from "@/server/db/sync-store";
+import { createSupabaseJobStore } from "@/server/db/job-store";
 import { createAdminClient } from "@/server/db/supabase-admin";
+import { createSupabaseSyncStore } from "@/server/db/sync-store";
 import { jsonError, jsonOk } from "@/server/http/response";
-import { maintainMarkets } from "@/server/jobs/markets";
-import { runMatchSync } from "@/server/jobs/sync-matches";
+import { runSyncJob } from "@/server/jobs/pipeline";
 import { logEvent } from "@/server/observability/log";
 import { createSportsProvider } from "@/server/providers/factory";
 import { isAuthorizedCron } from "@/server/security/cron-auth";
@@ -13,9 +13,8 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 /**
- * Ручной/cron-запуск: синхронизация матчей, затем обслуживание рынков (закрытие по времени,
- * создание недостающих). Lease, job_runs и расписание — этап 7; до тех пор параллельные вызовы
- * безопасны за счет общего лимитера, идемпотентного upsert и ON CONFLICT при создании рынков.
+ * Задание синхронизации и расчета (cron каждые 15 минут или ручной запуск). Под арендой: два
+ * одновременных вызова не работают параллельно — второй получает SKIPPED/LEASE_HELD.
  */
 export async function POST(request: NextRequest) {
   const requestId = crypto.randomUUID();
@@ -31,33 +30,38 @@ export async function POST(request: NextRequest) {
   const startedAt = Date.now();
   try {
     const { provider, competitions } = createSportsProvider(env);
-    const store = createSupabaseSyncStore(createAdminClient());
-    const summary = await runMatchSync({ provider, store, competitions, now: new Date() });
-    const markets = await maintainMarkets({ store, provider: provider.id });
+    const admin = createAdminClient();
+    const summary = await runSyncJob({
+      jobs: createSupabaseJobStore(admin),
+      store: createSupabaseSyncStore(admin),
+      provider,
+      competitions,
+      now: new Date(),
+    });
 
     logEvent({
-      event: "sync.finished",
-      level: summary.status === "failed" || summary.configError ? "error" : "info",
+      event: "job.finished",
+      level: summary.status === "FAILED" ? "error" : summary.status === "PARTIAL" ? "warn" : "info",
       requestId,
+      jobId: "sync",
       durationMs: Date.now() - startedAt,
-      providerStatus: summary.status,
-      processedCount: summary.inserted + summary.updated,
-      requests: summary.requests,
-      invalid: summary.invalid,
-      configError: summary.configError,
-      marketsCreated: markets.created,
-      marketsClosed: markets.closed,
-      marketsSuspended: markets.suspended,
+      providerStatus: summary.sync?.status ?? "none",
+      processedCount: (summary.settlement?.resolved ?? 0) + (summary.settlement?.void ?? 0),
+      jobStatus: summary.status,
+      generation: summary.generation,
+      errorCode: summary.errors[0]?.message,
+      resultConflicts: summary.results?.conflicts ?? 0,
     });
-    return jsonOk({ sync: summary, markets }, requestId);
+    return jsonOk(summary, requestId);
   } catch (error) {
     logEvent({
-      event: "sync.crashed",
+      event: "job.crashed",
       level: "error",
       requestId,
+      jobId: "sync",
       durationMs: Date.now() - startedAt,
       errorCode: error instanceof Error ? error.name : "unknown",
     });
-    return jsonError(503, "SERVICE_UNAVAILABLE", "Синхронизация недоступна", requestId);
+    return jsonError(503, "SERVICE_UNAVAILABLE", "Задание недоступно", requestId);
   }
 }

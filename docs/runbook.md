@@ -1,0 +1,50 @@
+# Runbook «Диванный аналитик»
+
+Короткие инструкции на случай сбоев (CLAUDE.md §20.3). Все SQL выполняются в SQL Editor Supabase от
+владельца проекта; функции разбора доступны только `service_role`/владельцу, не пользователям.
+
+## Задание синхронизации и расчета
+
+`POST /api/internal/jobs/sync` с `Authorization: Bearer <CRON_SECRET>`. Шаги: аренда → загрузка матчей →
+закрытие/создание рынков → подтверждение итогов → расчет пачки (до 50 рынков) → очистка → освобождение аренды.
+Ответ `SKIPPED / LEASE_HELD` — другой запуск еще работает, это нормально.
+
+- **Cron молчит.** `select * from cron.job;` (расписание активно?), `cron.job_run_details` (ошибки SQL),
+  `net._http_response` (HTTP-код: 401 — секрет в Vault не совпадает с `CRON_SECRET` в Vercel; 404 — приложение
+  в demo-режиме или неверный адрес), затем `public.job_runs`.
+- **Задание «зависло».** `select * from public.job_leases;` Аренда истекает сама через 120 с; следующий запуск
+  получит новое поколение. Устаревший исполнитель ничего не запишет (fencing по поколению).
+- **Поставщик 401.** Ошибка токена `FOOTBALL_DATA_API_KEY`: обновить в Vercel, повторы не помогут.
+- **Поставщик 429.** `select * from public.provider_rate_limits;` — до `next_allowed_at` запросов не будет.
+
+## Матч завершен, но не рассчитан
+
+```sql
+select status, result_kind, regulation_home_score, regulation_away_score,
+       result_fingerprint, result_first_seen_at, result_confirmed_at, result_conflict_at, last_seen_at
+from public.matches where id = '<match_id>';
+```
+
+- `result_kind = AMBIGUOUS` — итог неоднозначен, автоматический расчет не выполняется (ручная проверка).
+- `result_confirmed_at` пусто — итог подтвердится вторым наблюдением не раньше чем через 10 минут.
+- `result_conflict_at` заполнено — см. следующий раздел.
+- Рынок `OPEN` — его закрывает шаг рынков; проверьте, что задание запускается.
+
+## Итог изменился после расчета
+
+Автоматически ничего не переписывается: матч на паузе, в `audit_events` запись
+`RESULT_CHANGED_AFTER_SETTLEMENT`. Порядок:
+
+1. Сверить итог с независимым источником.
+2. При необходимости компенсировать пострадавшим — новой записью журнала (не правкой истории; в минус нельзя):
+   ```sql
+   select public.admin_compensate('<user_id>', 150, 'компенсация: исправлен итог матча <id>', 'fix-<match_id>-<user_id>');
+   ```
+   Ключ операции уникален: повторный вызов с тем же ключом отклоняется.
+3. Снять паузу, приняв наблюдаемый итог: `select public.admin_ack_result_conflict('<match_id>', 'причина');`
+
+## Баланс не совпадает с журналом
+
+Записи, нарушающие `balance = SUM(wallet_entries)`, отклоняются базой при фиксации транзакции. Если расхождение
+все же найдено — остановить задание (`select cron.unschedule('divan-sync');`), расследовать журнал, не править
+`wallets.balance` напрямую; исправление — только `admin_compensate`.
