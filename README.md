@@ -72,3 +72,14 @@ npm run db:stop
 Миграции лежат в `supabase/migrations`, SQL-тесты — в `supabase/tests/database`.
 Права по умолчанию отозваны у `anon` и `authenticated`: каждая новая таблица и функция
 получает grants явно (см. комментарий в `20261102000004_rls_grants.sql`).
+
+## Вход через GitHub (этап 3, режим connected)
+
+Нужны локальный Supabase (`npm run db:start`), GitHub OAuth App и файл `.env.local`
+(`APP_DATA_MODE=connected`, `APP_ORIGIN=http://localhost:3000`, ключи Supabase).
+Открывайте приложение по `http://localhost:3000` (не `127.0.0.1`): Origin проверяется строго по `APP_ORIGIN`.
+
+- `POST /auth/login` — запуск OAuth; `GET /auth/callback` — обмен кода и инициализация кошелька;
+  `POST /auth/signout` — выход.
+- Защищенные страницы и API проверяют пользователя на сервере через `getClaims()`.
+- В режиме demo вход отключен, эндпоинты отвечают 503/404.
