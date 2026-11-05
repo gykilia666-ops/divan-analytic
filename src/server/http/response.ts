@@ -7,11 +7,20 @@ export function jsonOk<T>(data: T, requestId: string, status = 200) {
   return NextResponse.json({ data, meta: { requestId } }, { status, headers: NO_STORE });
 }
 
-/** Публичные данные (каталог матчей): общий кеш на 30 секунд (CLAUDE.md §14.3). */
-export function jsonPublic<T>(data: T, meta: Record<string, unknown>, requestId: string) {
+/** Публичные данные: общий кеш (CLAUDE.md §14.3: матчи — 30 секунд, рейтинг — 60). */
+export function jsonPublic<T>(
+  data: T,
+  meta: Record<string, unknown>,
+  requestId: string,
+  maxAgeSeconds = 30,
+) {
   return NextResponse.json(
     { data, meta: { requestId, ...meta } },
-    { headers: { "Cache-Control": "public, s-maxage=30, stale-while-revalidate=30" } },
+    {
+      headers: {
+        "Cache-Control": `public, s-maxage=${maxAgeSeconds}, stale-while-revalidate=${maxAgeSeconds}`,
+      },
+    },
   );
 }
 

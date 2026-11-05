@@ -5,6 +5,7 @@ import { getCurrentProfile, type CurrentProfile } from "@/server/auth/session";
 // Ссылки добавляются только на существующие страницы.
 const NAV = [
   { href: "/matches", label: "Матчи" },
+  { href: "/leaderboard", label: "Рейтинг" },
   { href: "/rules", label: "Правила" },
   { href: "/privacy", label: "Приватность" },
 ] as const;
@@ -42,6 +43,11 @@ export async function SiteHeader() {
                 <li>
                   <Link href="/my/bets" className="underline-offset-4 hover:underline">
                     Мои прогнозы
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/my/stats" className="underline-offset-4 hover:underline">
+                    Статистика
                   </Link>
                 </li>
                 <li>
