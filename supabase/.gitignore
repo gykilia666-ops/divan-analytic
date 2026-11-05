@@ -7,3 +7,5 @@
 .env.local
 .env.*.local
 .env
+# Сохраненные запросы Supabase Studio (локальные черновики)
+snippets
