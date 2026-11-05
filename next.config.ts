@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
-// Базовые security headers. CSP намеренно отложен до этапа 10:
-// его нужно подгонять под Next.js и GitHub OAuth, а не копировать вслепую.
+// Базовые security headers. Content-Security-Policy с nonce ставит src/proxy.ts (этап 10, ADR-056):
+// nonce у каждого ответа свой, поэтому статическим заголовком здесь его задать нельзя.
 const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "DENY" },

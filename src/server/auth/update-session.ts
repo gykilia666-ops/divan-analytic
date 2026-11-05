@@ -3,17 +3,29 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getEnv } from "@/lib/env";
 import { getSupabaseConfig } from "@/lib/supabase-config";
 
+/** Заголовки запроса для серверных компонентов: исходные (с актуальными cookie) + добавленные. */
+function forwardHeaders(request: NextRequest, extra: Record<string, string>): Headers {
+  const headers = new Headers(request.headers);
+  for (const [key, value] of Object.entries(extra)) headers.set(key, value);
+  return headers;
+}
+
 /**
  * Обновление сессии в proxy.ts. Вызов getClaims() проверяет подпись токена и при необходимости
  * обновляет его; новые cookie передаются и серверным компонентам, и браузеру.
- * В режиме demo авторизации нет — запрос проходит без изменений.
+ * В режиме demo авторизации нет — запрос проходит без изменений (кроме extraRequestHeaders).
  */
-export async function updateSession(request: NextRequest): Promise<NextResponse> {
+export async function updateSession(
+  request: NextRequest,
+  extraRequestHeaders: Record<string, string> = {},
+): Promise<NextResponse> {
   const env = getEnv();
-  if (env.APP_DATA_MODE !== "connected") return NextResponse.next({ request });
+  const next = () =>
+    NextResponse.next({ request: { headers: forwardHeaders(request, extraRequestHeaders) } });
+  if (env.APP_DATA_MODE !== "connected") return next();
 
   const { url, publishableKey } = getSupabaseConfig(env);
-  let supabaseResponse = NextResponse.next({ request });
+  let supabaseResponse = next();
 
   const supabase = createServerClient(url, publishableKey, {
     cookies: {
@@ -22,7 +34,7 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
       },
       setAll(cookiesToSet, headers?: Record<string, string>) {
         for (const { name, value } of cookiesToSet) request.cookies.set(name, value);
-        supabaseResponse = NextResponse.next({ request });
+        supabaseResponse = next();
         for (const { name, value, options } of cookiesToSet) {
           supabaseResponse.cookies.set(name, value, options);
         }

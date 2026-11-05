@@ -1,8 +1,11 @@
 # Full local verification for divan-analytic (Windows PowerShell 5.1+).
 # Usage (from the project folder):
 #   powershell -ExecutionPolicy Bypass -File scripts\verify.ps1
+#   powershell -ExecutionPolicy Bypass -File scripts\verify.ps1 -Measure   (+ performance report, ~5 min)
 # Writes the full log to .verify\report.txt (git-ignored). Secrets are never printed.
 # WARNING: resets the LOCAL Supabase database (npm run db:reset).
+
+param([switch]$Measure)
 
 $ErrorActionPreference = "Continue"
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
@@ -163,6 +166,62 @@ if ($built -and $dockerOk) {
     $results["sync (football-data)"] = "SKIPPED (no FOOTBALL_DATA_API_KEY)"
   }
 }
+
+function Test-Measure {
+  $name = "measure (performance)"
+  Write-Log ""
+  Write-Log "===== STEP: $name ====="
+  $env:APP_DATA_MODE = "connected"
+  $env:SPORTS_PROVIDER = "fixtures"
+  $startedMs = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
+  $proc = Start-Process -FilePath "npx.cmd" -ArgumentList "next", "start", "-p", "3201" `
+    -PassThru -WindowStyle Hidden `
+    -RedirectStandardOutput (Join-Path $logDir "server-measure.out.txt") `
+    -RedirectStandardError (Join-Path $logDir "server-measure.err.txt")
+  try {
+    if (-not (Wait-Url "http://localhost:3201/api/health" 90)) {
+      Write-Log "server did not start; see .verify\server-measure.err.txt"
+      $results[$name] = "FAIL (server)"
+      return
+    }
+    $env:MEASURE_SERVER_STARTED_AT = "$startedMs"
+    $env:MEASURE_READY_AT = "$([DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds())"
+    $env:MEASURE_BASE_URL = "http://localhost:3201"
+    $out = & node scripts/perf/measure.mjs 2>&1 | ForEach-Object { "$_" }
+    $code = $LASTEXITCODE
+    $out | ForEach-Object { Write-Log $_ }
+    $results[$name] = if ($code -eq 0) { "DONE (.verify\perf.json)" } else { "FAIL (exit $code)" }
+  } finally {
+    & taskkill /PID $proc.Id /T /F 2>&1 | Out-Null
+    Remove-Item Env:SPORTS_PROVIDER, Env:APP_DATA_MODE, Env:MEASURE_SERVER_STARTED_AT, Env:MEASURE_READY_AT, Env:MEASURE_BASE_URL -ErrorAction SilentlyContinue
+    Start-Sleep -Seconds 2
+  }
+}
+
+if ($Measure -and $built -and $dockerOk) { Test-Measure }
+
+# --- Secrets must never appear in server logs (values are compared, never printed).
+Write-Log ""
+Write-Log "===== STEP: secrets in logs ====="
+$leaks = @()
+foreach ($key in @("CRON_SECRET", "SUPABASE_SERVICE_ROLE_KEY", "FOOTBALL_DATA_API_KEY")) {
+  $value = Read-EnvLocal $key
+  if (-not $value -or $value.Length -lt 8) { continue }
+  foreach ($file in Get-ChildItem -Path $logDir -Filter "server-*.txt" -ErrorAction SilentlyContinue) {
+    if (Select-String -Path $file.FullName -SimpleMatch -Pattern $value -Quiet) { $leaks += "$key in $($file.Name)" }
+  }
+}
+if ($leaks.Count -eq 0) {
+  Write-Log "no secret values found in .verify\server-*.txt"
+  $results["secrets in logs"] = "PASS"
+} else {
+  $leaks | ForEach-Object { Write-Log "LEAK: $_" }
+  $results["secrets in logs"] = "FAIL (rotate the leaked secrets)"
+}
+
+# --- Dependency audit (informational, same as CI).
+$auditOk = Run-Step "npm audit (info, prod deps, high+)" { npm audit --omit=dev --audit-level=high }
+if (-not $auditOk) { $results["npm audit (info, prod deps, high+)"] = "WARN (see log)" }
 
 Write-Log ""
 Write-Log "===== SUMMARY ====="

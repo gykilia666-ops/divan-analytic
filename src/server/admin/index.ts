@@ -148,7 +148,7 @@ export async function getAdminDashboard(
   return { overview, pending };
 }
 
-/** Проверка роли, лимит 1/мин и аудит в БД; сам запуск выполняет вызывающий. */
+/** Проверка роли, лимит 1 раз в 5 минут и аудит в БД; сам запуск выполняет вызывающий. */
 export async function requestAdminSync(
   supabase: ServerSupabase,
 ): Promise<{ ok: true } | { ok: false; code: "RATE_LIMITED" }> {

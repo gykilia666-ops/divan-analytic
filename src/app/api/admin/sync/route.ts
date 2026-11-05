@@ -9,7 +9,7 @@ import { logEvent } from "@/server/observability/log";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-/** Ручной запуск синхронизации администратором: не чаще раза в минуту, под общей арендой. */
+/** Ручной запуск синхронизации администратором: не чаще раза в 5 минут (§13.5), под общей арендой. */
 export async function POST(request: NextRequest) {
   const requestId = crypto.randomUUID();
   const guard = await guardAdmin(requestId);
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
   try {
     const permit = await requestAdminSync(guard.supabase);
     if (!permit.ok) {
-      return jsonError(429, "RATE_LIMITED", "Ручной запуск — не чаще раза в минуту", requestId);
+      return jsonError(429, "RATE_LIMITED", "Ручной запуск — не чаще раза в 5 минут", requestId);
     }
     logEvent({ event: "admin.sync_requested", requestId });
     return jsonOk(await executeSyncJob(guard.env, requestId, "admin"), requestId);

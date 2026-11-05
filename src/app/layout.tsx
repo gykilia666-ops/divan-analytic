@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { connection } from "next/server";
 import "./globals.css";
 import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
@@ -13,7 +14,10 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = { width: "device-width", initialScale: 1 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+// CSP с nonce (src/proxy.ts) требует динамического рендеринга: nonce свой у каждого ответа,
+// поэтому статическая предварительная отрисовка отключена для всех страниц (ADR-056).
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  await connection();
   const { dataMode } = getPublicConfig();
   return (
     <html lang="ru">
