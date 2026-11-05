@@ -41,7 +41,7 @@ const profileSchema = z.object({
   avatar_url: z.string().nullable(),
 });
 
-/** Профиль по RLS (виден только свой). null — нет сессии или профиль еще не создан. */
+/** Профиль по RLS (виден только свой). null — нет сессии, профиль еще не создан или аккаунт удален. */
 export const getCurrentProfile = cache(async (): Promise<CurrentProfile | null> => {
   const user = await getCurrentUser();
   if (!user) return null;
@@ -50,6 +50,7 @@ export const getCurrentProfile = cache(async (): Promise<CurrentProfile | null> 
     .from("profiles")
     .select("id, display_name, avatar_url")
     .eq("id", user.id)
+    .is("deleted_at", null)
     .maybeSingle();
   if (error) throw new Error(`profile query failed: ${error.code ?? "unknown"}`);
   if (!data) return null;

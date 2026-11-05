@@ -56,7 +56,13 @@ export async function SiteHeader() {
                   </Link>
                 </li>
                 <li data-testid="user-name" className="font-medium">
-                  {profile.displayName}
+                  <Link
+                    href="/my/account"
+                    title="Аккаунт"
+                    className="underline-offset-4 hover:underline"
+                  >
+                    {profile.displayName}
+                  </Link>
                 </li>
                 <li>
                   <form action="/auth/signout" method="post">

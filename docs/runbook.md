@@ -51,3 +51,31 @@ from public.matches where id = '<match_id>';
 Записи, нарушающие `balance = SUM(wallet_entries)`, отклоняются базой при фиксации транзакции. Если расхождение
 все же найдено — остановить задание (`select cron.unschedule('divan-sync');`), расследовать журнал, не править
 `wallets.balance` напрямую; исправление — только `admin_compensate`.
+
+## Резервная копия и восстановление
+
+На Free-плане Supabase нет платного PITR, поэтому перед рискованной миграцией копия делается вручную
+(файлы с данными пользователей — не в репозиторий):
+
+```bash
+npx supabase db dump --linked -f backup-schema.sql                      # схема
+npx supabase db dump --linked --data-only -f backup-data.sql            # данные
+```
+
+Проверка восстановления — на локальной базе, не на production:
+
+```bash
+npm run db:reset                                                         # схема из миграций
+psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -f backup-data.sql
+```
+
+Затем сверить: `select count(*) from public.bets;` и что для каждого кошелька баланс равен сумме журнала
+(инвариант проверяется базой при фиксации — некорректная копия не загрузится).
+
+## Расписание после сбоя
+
+- Отключить: `select cron.unschedule('divan-sync');` Включить снова — повторить `supabase/cron/schedule-sync.sql`
+  (секреты в Vault уже есть: если `create_secret` сообщает о существующем имени, обновить через
+  `select vault.update_secret((select id from vault.secrets where name = 'divan_cron_secret'), '<новый секрет>');`).
+- Пропущенные запуски догонять не нужно: следующий запуск загрузит текущие данные и рассчитает все готовые рынки.
+- Смена `CRON_SECRET`: новый секрет в Vercel → Redeploy → `vault.update_secret` для `divan_cron_secret`.
