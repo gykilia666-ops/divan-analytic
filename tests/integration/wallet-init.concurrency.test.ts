@@ -25,8 +25,8 @@ async function createAuthUser(name: string): Promise<string> {
   return id;
 }
 
-/** Вызов RPC от имени пользователя так же, как это делает PostgREST: роль + JWT-claims. */
-async function initAs(userId: string): Promise<{ balance: number; credited: boolean }> {
+/** Выбор псевдонима от имени пользователя так же, как это делает PostgREST: роль + JWT-claims. */
+async function chooseAs(userId: string, name: string): Promise<{ ok: boolean; code?: string }> {
   const client = await pool.connect();
   try {
     await client.query("begin");
@@ -34,12 +34,9 @@ async function initAs(userId: string): Promise<{ balance: number; credited: bool
     await client.query("select set_config('request.jwt.claims', $1, true)", [
       JSON.stringify({ sub: userId, role: "authenticated" }),
     ]);
-    const res = await client.query(
-      "select wallet_balance, credited from public.ensure_user_initialized()",
-    );
+    const res = await client.query("select public.set_pseudonym($1) as r", [name]);
     await client.query("commit");
-    const row = res.rows[0] as { wallet_balance: string; credited: boolean };
-    return { balance: Number(row.wallet_balance), credited: row.credited };
+    return res.rows[0].r as { ok: boolean; code?: string };
   } catch (error) {
     await client.query("rollback").catch(() => undefined);
     throw error;
@@ -63,27 +60,26 @@ async function ledgerState(userId: string) {
   };
 }
 
-describe("ensure_user_initialized: конкурентность", () => {
-  it("20 параллельных вызовов одного пользователя дают ровно одно начисление", async () => {
-    const userId = await createAuthUser("racer");
-    const results = await Promise.all(Array.from({ length: 20 }, () => initAs(userId)));
+const suffix = () => randomUUID().slice(0, 8);
 
-    expect(results.filter((r) => r.credited)).toHaveLength(1);
-    expect(results.every((r) => r.balance === 10_000)).toBe(true);
-
-    const state = await ledgerState(userId);
-    expect(state).toEqual({ entryCount: 1, ledgerSum: 10_000, balance: 10_000 });
+describe("set_pseudonym: создание профиля и кошелька, конкурентность (ADR-075)", () => {
+  it("вход без выбора псевдонима ничего не создает: ни профиля, ни кошелька, ни журнала", async () => {
+    const userId = await createAuthUser("idle");
+    const counts = await pool.query(
+      `select (select count(*) from public.profiles where id = $1)::int as p,
+              (select count(*) from public.wallets where user_id = $1)::int as w,
+              (select count(*) from public.wallet_entries where user_id = $1)::int as e`,
+      [userId],
+    );
+    expect(counts.rows[0]).toEqual({ p: 0, w: 0, e: 0 });
   });
 
-  it("повторные последовательные вызовы не начисляют снова", async () => {
-    const userId = await createAuthUser("sequential");
-    const first = await initAs(userId);
-    const second = await initAs(userId);
-    const third = await initAs(userId);
+  it("20 параллельных вызовов с одним именем дают ровно одно начисление", async () => {
+    const userId = await createAuthUser("racer");
+    const name = `racer-${suffix()}`;
+    const results = await Promise.all(Array.from({ length: 20 }, () => chooseAs(userId, name)));
 
-    expect(first.credited).toBe(true);
-    expect(second.credited).toBe(false);
-    expect(third.credited).toBe(false);
+    expect(results.every((r) => r.ok)).toBe(true);
     expect(await ledgerState(userId)).toEqual({
       entryCount: 1,
       ledgerSum: 10_000,
@@ -91,13 +87,70 @@ describe("ensure_user_initialized: конкурентность", () => {
     });
   });
 
-  it("параллельная инициализация разных пользователей не влияет друг на друга", async () => {
+  it("параллельные вызовы с разными именами: принято одно, остальные — ALREADY_SET", async () => {
+    const userId = await createAuthUser("indecisive");
+    const results = await Promise.all(
+      Array.from({ length: 10 }, (_, i) => chooseAs(userId, `variant-${i}-${suffix()}`)),
+    );
+
+    expect(results.filter((r) => r.ok)).toHaveLength(1);
+    expect(results.filter((r) => r.code === "ALREADY_SET")).toHaveLength(9);
+    expect(await ledgerState(userId)).toEqual({
+      entryCount: 1,
+      ledgerSum: 10_000,
+      balance: 10_000,
+    });
+  });
+
+  it("повторные последовательные вызовы не начисляют снова", async () => {
+    const userId = await createAuthUser("sequential");
+    const name = `seq-${suffix()}`;
+    for (let i = 0; i < 3; i++) expect((await chooseAs(userId, name)).ok).toBe(true);
+    expect(await ledgerState(userId)).toEqual({
+      entryCount: 1,
+      ledgerSum: 10_000,
+      balance: 10_000,
+    });
+  });
+
+  it("один и тот же псевдоним у двух пользователей: второй получает NAME_TAKEN и ничего не создает", async () => {
+    const name = `dup-${suffix()}`;
+    const first = await createAuthUser("first");
+    const second = await createAuthUser("second");
+    expect((await chooseAs(first, name)).ok).toBe(true);
+    const lost = await chooseAs(second, name.toUpperCase());
+    expect(lost).toMatchObject({ ok: false, code: "NAME_TAKEN" });
+
+    const rows = await pool.query(
+      "select (select count(*) from public.profiles where id = $1)::int as p, (select count(*) from public.wallets where user_id = $1)::int as w",
+      [second],
+    );
+    expect(rows.rows[0]).toEqual({ p: 0, w: 0 });
+  });
+
+  it("одновременный выбор одного имени разными пользователями: имя достается одному", async () => {
+    const name = `race-${suffix()}`;
+    const ids = await Promise.all(
+      Array.from({ length: 8 }, (_, i) => createAuthUser(`rival-${i}`)),
+    );
+    const results = await Promise.all(ids.map((id) => chooseAs(id, name)));
+
+    expect(results.filter((r) => r.ok)).toHaveLength(1);
+    expect(results.filter((r) => r.code === "NAME_TAKEN")).toHaveLength(7);
+    const profiles = await pool.query(
+      "select count(*)::int as n from public.profiles where id = any($1::uuid[])",
+      [ids],
+    );
+    expect(profiles.rows[0].n).toBe(1);
+  });
+
+  it("параллельный выбор у разных пользователей не влияет друг на друга", async () => {
     const ids = await Promise.all(
       Array.from({ length: 10 }, (_, i) => createAuthUser(`user-${i}`)),
     );
-    const results = await Promise.all(ids.map((id) => initAs(id)));
+    const results = await Promise.all(ids.map((id, i) => chooseAs(id, `many-${i}-${suffix()}`)));
 
-    expect(results.every((r) => r.credited && r.balance === 10_000)).toBe(true);
+    expect(results.every((r) => r.ok)).toBe(true);
     for (const id of ids) {
       expect(await ledgerState(id)).toEqual({ entryCount: 1, ledgerSum: 10_000, balance: 10_000 });
     }

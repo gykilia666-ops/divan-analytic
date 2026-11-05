@@ -113,6 +113,9 @@ GitHub Actions на каждый push: формат, линтер, типы, uni
   (`npx supabase db push --linked`), не из сборки Vercel.
 - Сбои, компенсации, резервная копия и восстановление: [`docs/runbook.md`](./docs/runbook.md).
 - Сценарий показа проекта: [`docs/demo-script.md`](./docs/demo-script.md).
+- Стратегия тестирования и план закрытия пробелов: [`docs/testing-strategy.md`](./docs/testing-strategy.md).
+- Пользовательское соглашение, политика ПДн, согласия и что владельцу нужно сделать до публичного запуска:
+  [`docs/legal-checklist.md`](./docs/legal-checklist.md). Без `LEGAL_OPERATOR_*` вход закрыт.
 - Вход работает только с основного домена `divan-analytic.vercel.app`: служебные адреса деплоев отвечают
   403 — Origin запроса должен совпадать с `APP_ORIGIN`.
 

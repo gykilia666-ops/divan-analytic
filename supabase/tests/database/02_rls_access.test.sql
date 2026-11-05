@@ -20,13 +20,13 @@ insert into public.matches (id, provider, provider_id, competition_id, home_team
 insert into public.markets (id, match_id, type, quote_version, model_version, home_odds_milli, draw_odds_milli, away_odds_milli) values
   ('d1000000-0000-4000-8000-000000000001', 'f1000000-0000-4000-8000-000000000001', 'MATCH_RESULT_1X2', 1, 'demo-v1', 2350, 3100, 2900);
 
--- ======================================================= инициализация A и B через RPC
+-- ======================================================= A и B выбирают псевдоним: создаются профиль и кошелек (ADR-075)
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"00000000-0000-4000-8000-00000000000a","role":"authenticated"}';
-select lives_ok($$ select * from public.ensure_user_initialized() $$, 'A инициализирован');
+select is((public.set_pseudonym('Alice Z') ->> 'ok')::boolean, true, 'A выбрал псевдоним: профиль и кошелек созданы');
 
 set local request.jwt.claims = '{"sub":"00000000-0000-4000-8000-00000000000b","role":"authenticated"}';
-select lives_ok($$ select * from public.ensure_user_initialized() $$, 'B инициализирован');
+select is((public.set_pseudonym('Bobby Z') ->> 'ok')::boolean, true, 'B выбрал псевдоним');
 reset role;
 
 insert into public.bets (user_id, market_id, outcome, stake, accepted_odds_milli, potential_payout, idempotency_key, request_hash)
@@ -38,7 +38,8 @@ set local role authenticated;
 set local request.jwt.claims = '{"sub":"00000000-0000-4000-8000-00000000000a","role":"authenticated"}';
 
 select is((select count(*) from public.profiles), 1::bigint, 'A видит только свой профиль');
-select is((select display_name from public.profiles), 'alice', 'имя профиля взято из OAuth-метаданных');
+select is((select display_name from public.profiles), 'Alice Z',
+  'в профиле выбранный псевдоним, а не логин из OAuth-метаданных (ADR-072)');
 select is((select count(*) from public.wallets), 1::bigint, 'A видит только свой кошелек');
 select is((select balance from public.wallets), 10000::bigint, 'стартовый баланс A = 10000');
 select is((select count(*) from public.wallet_entries), 1::bigint, 'A видит только свой журнал');
@@ -63,22 +64,20 @@ select throws_ok($$ select * from public.user_roles $$, '42501', null,
   'A не имеет доступа к user_roles');
 select throws_ok($$ update public.profiles set disabled_at = null $$, '42501', null,
   'A не может менять служебные поля профиля');
-select lives_ok($$ update public.profiles set display_name = 'Alice Z' $$,
-  'A может менять свое отображаемое имя');
-select lives_ok($$ update public.profiles set display_name = 'hacked' where id = '00000000-0000-4000-8000-00000000000b' $$,
-  'попытка изменить чужой профиль не падает, но не затрагивает строк');
-select throws_ok($$ update public.profiles set display_name = 'x' $$, '23514', null,
-  'слишком короткое имя отклоняется ограничением');
+select throws_ok($$ update public.profiles set display_name = 'Alice Z' $$, '42501', null,
+  'A не может менять имя напрямую: только через set_pseudonym');
+select is(public.set_pseudonym('Другое Имя') ->> 'code', 'ALREADY_SET', 'A не может сменить выбранный псевдоним (ADR-073)');
+select is(public.set_pseudonym('x') ->> 'code', 'INVALID_NAME', 'слишком короткое имя отклоняется');
 
-select is((select credited from public.ensure_user_initialized()), false,
-  'повторная инициализация не начисляет монеты');
+select is((public.set_pseudonym('Alice Z') ->> 'ok')::boolean, true,
+  'повторный выбор того же имени проходит и монеты не начисляет');
 select is((select balance from public.wallets), 10000::bigint, 'баланс A после повторного вызова не изменился');
 reset role;
 
 select is((select display_name from public.profiles where id = '00000000-0000-4000-8000-00000000000a'),
-  'Alice Z', 'имя A изменено');
+  'Alice Z', 'имя A сохранено');
 select is((select display_name from public.profiles where id = '00000000-0000-4000-8000-00000000000b'),
-  'bobby', 'имя B не изменилось');
+  'Bobby Z', 'имя B не затронуто действиями A');
 
 -- ======================================================= пользователь B видит свой прогноз
 set local role authenticated;
@@ -89,8 +88,8 @@ reset role;
 -- ======================================================= аутентифицированная роль без токена
 set local role authenticated;
 set local request.jwt.claims = '{}';
-select throws_ok($$ select * from public.ensure_user_initialized() $$, '28000', null,
-  'без sub в токене инициализация невозможна');
+select throws_ok($$ select public.set_pseudonym('Без Токена') $$, '28000', null,
+  'без sub в токене выбрать псевдоним нельзя');
 reset role;
 
 -- ======================================================= гость
@@ -101,8 +100,9 @@ select is((select count(*) from public.markets where id = 'd1000000-0000-4000-80
 select throws_ok($$ select * from public.wallets $$, '42501', null, 'гость не читает кошельки');
 select throws_ok($$ select * from public.bets $$, '42501', null, 'гость не читает прогнозы');
 select throws_ok($$ select * from public.profiles $$, '42501', null, 'гость не читает профили');
-select throws_ok($$ select * from public.ensure_user_initialized() $$, '42501', null,
-  'гость не может вызвать ensure_user_initialized (EXECUTE отозван)');
+select throws_ok($$ select public.set_pseudonym('Гость Имя') $$, '42501', null,
+  'гость не может вызвать set_pseudonym (EXECUTE отозван)');
+select hasnt_function('public', 'ensure_user_initialized', 'инициализация при входе удалена (ADR-075)');
 select throws_ok($$ select public.market_transition_allowed('OPEN', 'CLOSED') $$, '42501', null,
   'служебные функции недоступны клиентам');
 reset role;

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { KickoffTime } from "@/components/matches/kickoff-time";
 import { formatOdds } from "@/domain/odds/demo-odds";
-import { requireUser } from "@/server/auth/session";
+import { requirePseudonym } from "@/server/auth/session";
 import { BET_STATUSES, getMyBets, parseBetStatus, type BetStatus } from "@/server/betting/history";
 import { decodeCursor } from "@/server/catalog/cursor";
 import { createClient } from "@/server/db/supabase-server";
@@ -34,7 +34,7 @@ async function load(status: BetStatus | null, cursor: string | null) {
 }
 
 export default async function MyBetsPage({ searchParams }: { searchParams: SearchParams }) {
-  await requireUser("/my/bets");
+  await requirePseudonym("/my/bets");
   const params = await searchParams;
   const status = parseBetStatus(params.status);
   const rawCursor = typeof params.cursor === "string" ? params.cursor : null;
@@ -56,7 +56,7 @@ export default async function MyBetsPage({ searchParams }: { searchParams: Searc
               <Link
                 href={f.value ? `/my/bets?status=${f.value}` : "/my/bets"}
                 aria-current={f.value === status ? "page" : undefined}
-                className={`rounded border px-2 py-1 ${f.value === status ? "border-accent font-semibold" : "border-border"}`}
+                className={`rounded-lg border px-2 py-1 ${f.value === status ? "border-accent font-semibold" : "border-border"}`}
               >
                 {f.label}
               </Link>
@@ -66,11 +66,11 @@ export default async function MyBetsPage({ searchParams }: { searchParams: Searc
       </nav>
 
       {!result.ok ? (
-        <p role="alert" className="rounded border border-border bg-warn-bg p-3 text-warn-fg">
+        <p role="alert" className="rounded-lg border border-border bg-warn-bg p-3 text-warn-fg">
           Не удалось загрузить прогнозы. Попробуйте позже.
         </p>
       ) : result.page.items.length === 0 ? (
-        <p className="rounded border border-border bg-surface p-4" data-testid="bets-empty">
+        <p className="rounded-lg border border-border bg-surface p-4" data-testid="bets-empty">
           Прогнозов пока нет.{" "}
           <Link href="/matches" className="underline">
             Посмотреть матчи
@@ -81,12 +81,12 @@ export default async function MyBetsPage({ searchParams }: { searchParams: Searc
           {result.page.items.map((bet) => (
             <li
               key={bet.id}
-              className="rounded border border-border bg-surface p-4"
+              className="rounded-lg border border-border bg-surface p-4"
               data-testid="bet-item"
             >
               <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted">
                 <span>{bet.match.competition}</span>
-                <span className="rounded border border-border px-2 py-0.5 font-medium text-fg">
+                <span className="rounded-lg border border-border px-2 py-0.5 font-medium text-fg">
                   {STATUS_LABEL[bet.status]}
                 </span>
               </div>

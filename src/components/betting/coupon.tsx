@@ -18,6 +18,8 @@ function formatOdds(milli: number): string {
 
 const numberFormat = new Intl.NumberFormat("ru-RU");
 
+const STAKE_STEP = 10;
+
 type Placed = { outcome: Outcome; stake: number; potentialPayout: number; balance: number | null };
 
 /**
@@ -53,6 +55,14 @@ export function Coupon({
         : outcome === "AWAY"
           ? odds.away
           : null;
+
+  // Ползунок: от минимума до меньшего из лимита и баланса, шаг 10. Поле ввода остаётся для точной суммы.
+  const sliderMax = Math.min(STAKE_MAX, Math.floor(balance / STAKE_STEP) * STAKE_STEP);
+  const sliderDisabled = sliderMax < STAKE_MIN;
+  const parsed = Number.parseInt(stakeRaw, 10);
+  const sliderValue = Number.isFinite(parsed)
+    ? Math.min(Math.max(parsed, STAKE_MIN), Math.max(sliderMax, STAKE_MIN))
+    : STAKE_MIN;
 
   function newIntent() {
     keyRef.current = null;
@@ -118,7 +128,7 @@ export function Coupon({
     return (
       <div
         role="status"
-        className="rounded border border-border bg-surface p-4"
+        className="rounded-lg border border-border bg-surface p-4"
         data-testid="coupon-success"
       >
         <p className="font-semibold">Прогноз принят: {label}</p>
@@ -136,7 +146,7 @@ export function Coupon({
   return (
     <form
       onSubmit={submit}
-      className="space-y-3 rounded border border-border bg-surface p-4"
+      className="space-y-3 rounded-lg border border-border bg-surface p-4"
       aria-label="Купон"
     >
       <fieldset>
@@ -148,7 +158,7 @@ export function Coupon({
             return (
               <label
                 key={o.value}
-                className={`flex cursor-pointer items-center justify-between gap-2 rounded border px-3 py-2 ${
+                className={`flex cursor-pointer items-center justify-between gap-2 rounded-lg border px-3 py-2 ${
                   outcome === o.value ? "border-accent font-semibold" : "border-border"
                 }`}
               >
@@ -178,6 +188,27 @@ export function Coupon({
           Сумма, монет ({STAKE_MIN}–{STAKE_MAX}; на балансе {numberFormat.format(balance)})
         </label>
         <input
+          id="stake-range"
+          type="range"
+          min={STAKE_MIN}
+          max={Math.max(sliderMax, STAKE_MIN)}
+          step={STAKE_STEP}
+          value={sliderValue}
+          disabled={sliderDisabled}
+          onChange={(e) => {
+            setStakeRaw(e.target.value);
+            newIntent();
+          }}
+          aria-label="Сумма прогноза, ползунок"
+          aria-valuetext={`${numberFormat.format(sliderValue)} монет`}
+          className="w-full max-w-sm accent-[var(--accent)] disabled:opacity-50"
+          data-testid="stake-range"
+        />
+        <div className="flex max-w-sm justify-between text-xs text-muted" aria-hidden="true">
+          <span>{STAKE_MIN}</span>
+          <span>{numberFormat.format(Math.max(sliderMax, STAKE_MIN))}</span>
+        </div>
+        <input
           id="stake"
           name="stake"
           inputMode="numeric"
@@ -188,7 +219,7 @@ export function Coupon({
           }}
           aria-invalid={!stake.ok}
           aria-describedby="stake-help"
-          className="w-40 rounded border border-border bg-surface px-2 py-1"
+          className="w-40 rounded-lg border border-border bg-surface px-2 py-1"
         />
         <p id="stake-help" className="text-sm" data-testid="stake-help">
           {!stake.ok
@@ -202,7 +233,7 @@ export function Coupon({
       {error ? (
         <p
           role="alert"
-          className="rounded border border-border bg-warn-bg p-2 text-sm text-warn-fg"
+          className="rounded-lg border border-border bg-warn-bg p-2 text-sm text-warn-fg"
           data-testid="coupon-error"
         >
           {error.message}
@@ -220,7 +251,7 @@ export function Coupon({
       <button
         type="submit"
         disabled={pending || !outcome || !stake.ok}
-        className="rounded bg-accent px-4 py-2 font-medium text-accent-fg hover:opacity-90 disabled:opacity-50"
+        className="rounded-lg bg-accent px-4 py-2 font-medium text-accent-fg hover:opacity-90 disabled:opacity-50"
       >
         {pending ? "Отправляем…" : "Подтвердить прогноз"}
       </button>

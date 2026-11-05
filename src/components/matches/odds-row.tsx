@@ -10,7 +10,7 @@ export function OddsRow({ market, dimmed }: { market: CatalogMarket; dimmed: boo
       aria-label="Демонстрационные коэффициенты"
     >
       {outcomes.map((key) => (
-        <div key={key} className="rounded border border-border px-2 py-1">
+        <div key={key} className="rounded-lg border border-border px-2 py-1">
           <dt className="text-xs text-muted">
             <span aria-hidden="true">{OUTCOME_LABEL[key].short}</span>
             <span className="sr-only">{OUTCOME_LABEL[key].long}</span>

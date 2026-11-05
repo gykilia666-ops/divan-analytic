@@ -11,7 +11,8 @@ export interface CurrentUser {
 
 export interface CurrentProfile {
   id: string;
-  displayName: string;
+  /** null — псевдоним еще не выбран (ADR-072). */
+  displayName: string | null;
   avatarUrl: string | null;
 }
 
@@ -35,9 +36,23 @@ export async function requireUser(returnTo: string): Promise<CurrentUser> {
   return user;
 }
 
+/**
+ * Для личных страниц: нужны вход и выбранный псевдоним. Без псевдонима — на страницу его выбора
+ * (ADR-072: имя придумывает сам пользователь), с возвратом на исходную страницу.
+ */
+export async function requirePseudonym(returnTo: string): Promise<CurrentProfile> {
+  await requireUser(returnTo);
+  const profile = await getCurrentProfile();
+  // Профиля нет, пока псевдоним не выбран (ADR-075): это тот же путь, что и «имя не выбрано».
+  if (!profile || !profile.displayName) {
+    redirect(`/my/pseudonym?next=${encodeURIComponent(returnTo)}`);
+  }
+  return profile;
+}
+
 const profileSchema = z.object({
   id: z.string(),
-  display_name: z.string(),
+  display_name: z.string().nullable(),
   avatar_url: z.string().nullable(),
 });
 

@@ -5,15 +5,12 @@ import { expect, test } from "@playwright/test";
 const card = (page: import("@playwright/test").Page, name: string) =>
   page.getByRole("listitem", { name });
 
-test("по умолчанию — только матчи, на которые можно сделать прогноз", async ({ page }) => {
+test("по умолчанию — предстоящие матчи, завершенных нет", async ({ page }) => {
   await page.goto("/matches");
-  await expect(page.getByTestId("match-card")).toHaveCount(2);
-  for (const reason of await page
-    .getByTestId("acceptance")
-    .evaluateAll((els) => els.map((el) => el.getAttribute("data-reason")))) {
-    expect(["OPEN", "STALE"]).toContain(reason);
-  }
+  await expect(page.getByTestId("match-card")).toHaveCount(5);
+  await expect(page.getByLabel("Матчи")).toHaveValue("upcoming");
   await expect(page.getByText("Статус: Завершён")).toHaveCount(0);
+  await expect(page.getByText("Статус: Отменён")).toHaveCount(0);
 });
 
 test("карточки показывают коэффициенты и состояние приема", async ({ page }) => {
@@ -65,7 +62,7 @@ test("пустой результат и сброс фильтров", async ({ 
   await page.goto("/matches?date=2030-01-01");
   await expect(page.getByTestId("matches-empty")).toBeVisible();
   await page.getByRole("link", { name: "Сбросить фильтры" }).click();
-  await expect(page.getByTestId("match-card")).toHaveCount(2);
+  await expect(page.getByTestId("match-card")).toHaveCount(5);
 });
 
 test("пагинация", async ({ page }) => {

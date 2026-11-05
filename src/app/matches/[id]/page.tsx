@@ -25,7 +25,7 @@ export default async function MatchPage({ params, searchParams }: Props) {
 
   if (!result.ok) {
     return (
-      <p role="alert" className="rounded border border-border bg-warn-bg p-3 text-warn-fg">
+      <p role="alert" className="rounded-lg border border-border bg-warn-bg p-3 text-warn-fg">
         Не удалось загрузить матч. Попробуйте позже.
       </p>
     );
@@ -70,7 +70,7 @@ export default async function MatchPage({ params, searchParams }: Props) {
       </dl>
 
       {match.stale ? (
-        <p role="note" className="rounded border border-border bg-warn-bg p-3 text-warn-fg">
+        <p role="note" className="rounded-lg border border-border bg-warn-bg p-3 text-warn-fg">
           Данные по матчу обновлялись больше часа назад — новые прогнозы не принимаются.
         </p>
       ) : null}
@@ -82,7 +82,7 @@ export default async function MatchPage({ params, searchParams }: Props) {
         {market ? (
           <ul className="grid gap-2 sm:grid-cols-3">
             {outcomes.map((key) => (
-              <li key={key} className="rounded border border-border bg-surface p-3 text-center">
+              <li key={key} className="rounded-lg border border-border bg-surface p-3 text-center">
                 <p className="text-sm text-muted">
                   {OUTCOME_LABEL[key].long} ({OUTCOME_LABEL[key].short})
                 </p>

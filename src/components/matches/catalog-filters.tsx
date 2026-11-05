@@ -2,8 +2,7 @@ import type { CatalogQuery } from "@/server/catalog/types";
 import { TimezoneSelect } from "./timezone-select";
 
 const SCOPE_LABEL = {
-  open: "Можно сделать прогноз",
-  upcoming: "Все предстоящие",
+  upcoming: "Предстоящие",
   finished: "Завершённые",
   all: "Все",
 } as const;
@@ -19,12 +18,12 @@ export function CatalogFilters({
   explicitTimeZone: string | null;
 }) {
   const field = "flex flex-col gap-1 text-sm";
-  const control = "w-full rounded border border-border bg-surface px-2 py-1";
+  const control = "w-full rounded-lg border border-border bg-surface px-2 py-1";
   return (
     <form
       method="get"
       action="/matches"
-      className="grid gap-3 rounded border border-border bg-surface p-3 sm:grid-cols-5"
+      className="grid gap-3 rounded-lg border border-border bg-surface p-3 sm:grid-cols-5"
       aria-label="Фильтры матчей"
     >
       <label className={field}>
@@ -59,7 +58,7 @@ export function CatalogFilters({
       <div className="flex items-end">
         <button
           type="submit"
-          className="w-full rounded bg-accent px-4 py-1.5 font-medium text-accent-fg hover:opacity-90"
+          className="w-full rounded-lg bg-accent px-4 py-1.5 font-medium text-accent-fg hover:opacity-90"
         >
           Показать
         </button>

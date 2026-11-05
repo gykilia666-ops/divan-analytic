@@ -10,9 +10,13 @@ export async function GET() {
     if (!user) return jsonError(401, "UNAUTHENTICATED", "Требуется вход", requestId);
 
     const profile = await getCurrentProfile();
-    if (!profile) return jsonError(404, "NOT_FOUND", "Профиль не найден", requestId);
+    // До выбора псевдонима профиля нет (ADR-075): отвечаем без имени, а не ошибкой.
     return jsonOk(
-      { id: profile.id, displayName: profile.displayName, avatarUrl: profile.avatarUrl },
+      {
+        id: user.id,
+        displayName: profile?.displayName ?? null,
+        avatarUrl: profile?.avatarUrl ?? null,
+      },
       requestId,
     );
   } catch {

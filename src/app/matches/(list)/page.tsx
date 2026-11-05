@@ -23,7 +23,7 @@ export default async function MatchesPage({ searchParams }: { searchParams: Sear
     return (
       <div className="space-y-4">
         <h1 className="text-2xl font-bold">Матчи</h1>
-        <p role="alert" className="rounded border border-border bg-warn-bg p-3 text-warn-fg">
+        <p role="alert" className="rounded-lg border border-border bg-warn-bg p-3 text-warn-fg">
           Не удалось загрузить матчи. Попробуйте обновить страницу чуть позже.
         </p>
       </div>
@@ -38,32 +38,15 @@ export default async function MatchesPage({ searchParams }: { searchParams: Sear
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">Матчи</h1>
 
-      <div
-        className="rounded border border-border bg-surface p-3 text-sm"
-        data-testid="matches-note"
-      >
-        {page.source === "demo" ? (
-          <p>
-            Вымышленные матчи демонстрационного набора. «Текущий момент» демо:{" "}
-            <KickoffTime iso={page.now} timeZone={explicitTimeZone} />.
-          </p>
-        ) : (
-          <p>
-            Данные поставщика могут приходить с задержкой.{" "}
-            {page.lastSyncedAt ? (
-              <>
-                Последнее обновление:{" "}
-                <KickoffTime iso={page.lastSyncedAt} timeZone={explicitTimeZone} />.
-              </>
-            ) : (
-              "Синхронизация еще не выполнялась."
-            )}
-          </p>
-        )}
-        <p className="mt-1">
-          Коэффициенты демонстрационные. Прием прогнозов закрывается за 5 минут до начала матча.
+      {page.source === "demo" ? (
+        <p
+          className="rounded-lg border border-border bg-surface p-3 text-sm"
+          data-testid="matches-note"
+        >
+          Вымышленные матчи демонстрационного набора. «Текущий момент» демо:{" "}
+          <KickoffTime iso={page.now} timeZone={explicitTimeZone} />.
         </p>
-      </div>
+      ) : null}
 
       <CatalogFilters
         query={query}
@@ -78,7 +61,7 @@ export default async function MatchesPage({ searchParams }: { searchParams: Sear
       </p>
 
       {page.items.length === 0 ? (
-        <p className="rounded border border-border bg-surface p-4" data-testid="matches-empty">
+        <p className="rounded-lg border border-border bg-surface p-4" data-testid="matches-empty">
           Матчей по выбранным условиям нет.{" "}
           <Link href="/matches" className="underline">
             Сбросить фильтры

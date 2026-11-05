@@ -46,11 +46,11 @@ create function pg_temp.ledger_ok(p_uid text) returns boolean language sql as $f
        = (select sum(amount) from public.wallet_entries where user_id = p_uid::uuid)
 $f$;
 
-do $$ begin perform pg_temp.as_user('00000000-0000-4000-8000-0000000007a1'); perform public.ensure_user_initialized();
+do $$ begin perform pg_temp.as_user('00000000-0000-4000-8000-0000000007a1'); perform public.set_pseudonym('Игрок Альфа');
   perform pg_temp.bet(1, 'HOME', 100); perform pg_temp.bet(2, 'HOME', 200); perform pg_temp.bet(5, 'AWAY', 100); end $$;
-do $$ begin perform pg_temp.as_user('00000000-0000-4000-8000-0000000007b1'); perform public.ensure_user_initialized();
+do $$ begin perform pg_temp.as_user('00000000-0000-4000-8000-0000000007b1'); perform public.set_pseudonym('Игрок Браво');
   perform pg_temp.bet(1, 'AWAY', 100); perform pg_temp.bet(3, 'HOME', 50); end $$;
-do $$ begin perform pg_temp.as_user('00000000-0000-4000-8000-0000000007c1'); perform public.ensure_user_initialized();
+do $$ begin perform pg_temp.as_user('00000000-0000-4000-8000-0000000007c1'); perform public.set_pseudonym('Игрок Чарли');
   perform pg_temp.bet(1, 'DRAW', 100); perform pg_temp.bet(4, 'HOME', 100); end $$;
 reset role;
 

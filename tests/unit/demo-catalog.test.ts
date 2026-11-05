@@ -19,11 +19,18 @@ describe("getDemoCatalog", () => {
     expect(page.source).toBe("demo");
   });
 
-  it("по умолчанию — только матчи, на которые можно сделать прогноз", () => {
-    const ids = getDemoCatalog(parseCatalogQuery({})).items.map((m) => m.id);
-    // Предстоящий и с устаревшими данными (временное состояние); без «через 3 минуты»,
-    // перенесенного, прерванного и завершенных.
-    expect(ids).toEqual(["demo-012", "demo-001"]);
+  it("по умолчанию — предстоящие (ADR-078)", () => {
+    const byDefault = getDemoCatalog(parseCatalogQuery({})).items.map((m) => m.id);
+    const upcoming = getDemoCatalog(parseCatalogQuery({ scope: "upcoming" })).items.map(
+      (m) => m.id,
+    );
+    expect(byDefault).toEqual(upcoming);
+    // Не завершенные и не отмененные: в том числе те, где прием уже закрыт, — карточка это показывает.
+    expect(byDefault).toEqual(["demo-008", "demo-002", "demo-012", "demo-007", "demo-001"]);
+  });
+
+  it("устаревший параметр scope=open больше не поддерживается и дает «Предстоящие»", () => {
+    expect(parseCatalogQuery({ scope: "open" }).scope).toBe("upcoming");
   });
 
   it("предстоящие и завершенные", () => {

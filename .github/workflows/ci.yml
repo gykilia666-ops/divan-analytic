@@ -56,9 +56,9 @@ jobs:
 
   # Миграции с нуля, pgTAP и интеграционные тесты на локальном Supabase (CLAUDE.md §18.4, шаг 6).
   database:
-    name: Supabase local — миграции, pgTAP, интеграция
+    name: Supabase local — миграции, pgTAP, интеграция, e2e connected
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -70,5 +70,15 @@ jobs:
       - run: npx supabase db reset
       - run: npx supabase test db
       - run: npm run test:integration
+      # Полный путь пользователя на локальном Supabase (docs/testing-strategy.md, п. 1).
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run e2e:connected
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report-connected
+          path: playwright-report
+          retention-days: 7
       - run: npx supabase stop
         if: always()

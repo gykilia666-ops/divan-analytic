@@ -2,7 +2,17 @@ import { expect, test } from "@playwright/test";
 
 // CSP с nonce (CLAUDE.md §13.4): заголовок есть, нарушений нет, страницы гидрируются.
 
-const PAGES = ["/", "/matches", "/matches/demo-001", "/leaderboard", "/rules", "/login"];
+const PAGES = [
+  "/",
+  "/matches",
+  "/matches/demo-001",
+  "/leaderboard",
+  "/rules",
+  "/login",
+  "/terms",
+  "/privacy",
+  "/consent",
+];
 
 test("CSP с nonce и базовые заголовки безопасности", async ({ request }) => {
   const res = await request.get("/");

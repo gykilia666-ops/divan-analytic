@@ -36,13 +36,13 @@ end;
 $f$;
 
 do $$ begin perform pg_temp.as_user('00000000-0000-4000-8000-0000000006a1'); end $$;
-do $$ begin perform public.ensure_user_initialized(); end $$;
+do $$ begin perform public.set_pseudonym('Alice Six'); end $$;
 do $$ begin perform pg_temp.as_user('00000000-0000-4000-8000-0000000006b1'); end $$;
-do $$ begin perform public.ensure_user_initialized(); end $$;
+do $$ begin perform public.set_pseudonym('Bobby Six'); end $$;
 do $$ begin perform pg_temp.as_user('00000000-0000-4000-8000-0000000006c1'); end $$;
-do $$ begin perform public.ensure_user_initialized(); end $$;
+do $$ begin perform public.set_pseudonym('Carol Six'); end $$;
 do $$ begin perform pg_temp.as_user('00000000-0000-4000-8000-0000000006d1'); end $$;
-do $$ begin perform public.ensure_user_initialized(); end $$;
+do $$ begin perform public.set_pseudonym('David Six'); end $$;
 reset role;
 
 create function pg_temp.spam() returns jsonb language plpgsql as $f$
@@ -169,6 +169,43 @@ select is((select res ->> 'code' from r where name = 'rate'), 'RATE_LIMITED',
   '11-я попытка за минуту отклонена — лимит действует и при прямом вызове RPC');
 select is((select count(*) from public.bets where user_id = '00000000-0000-4000-8000-0000000006d1'), 0::bigint,
   'после отказа по лимиту прогноз не создан');
+
+-- ======================================================= игрок без псевдонима (ADR-074)
+insert into auth.users (id, email, raw_user_meta_data) values
+  ('00000000-0000-4000-8000-0000000006e1', 'e6@test.local', '{}');
+do $$ begin perform pg_temp.as_user('00000000-0000-4000-8000-0000000006e1'); end $$;
+insert into r values ('no_name', public.place_bet('a6000000-0000-4000-8000-000000000002', 'HOME', 100, 1, 'b6000000-0000-4000-8000-0000000000f1'));
+-- Повтор с тем же ключом даёт тот же отказ.
+insert into r values ('no_name_repeat', public.place_bet('a6000000-0000-4000-8000-000000000002', 'HOME', 100, 1, 'b6000000-0000-4000-8000-0000000000f1'));
+reset role;
+select is((select res ->> 'code' from r where name = 'no_name'), 'PSEUDONYM_REQUIRED', 'без псевдонима прогноз не принимается');
+select is((select res ->> 'code' from r where name = 'no_name_repeat'), 'PSEUDONYM_REQUIRED', 'повторная попытка с тем же ключом тоже отклонена');
+select is((select count(*) from public.bets where user_id = '00000000-0000-4000-8000-0000000006e1'), 0::bigint,
+  'прогноз без псевдонима не создан');
+select is((select count(*) from public.profiles where id = '00000000-0000-4000-8000-0000000006e1')
+        + (select count(*) from public.wallets where user_id = '00000000-0000-4000-8000-0000000006e1')
+        + (select count(*) from public.wallet_entries where user_id = '00000000-0000-4000-8000-0000000006e1'),
+  0::bigint, 'отказ не создал ни профиля, ни кошелька, ни журнала (ADR-075)');
+select is((select count(*) from public.rate_limit_buckets where bucket_key = 'place_bet:00000000-0000-4000-8000-0000000006e1'),
+  0::bigint, 'отказ из-за псевдонима не расходует лимит частоты');
+
+-- После выбора псевдонима тот же игрок делает прогноз.
+do $$ begin perform pg_temp.as_user('00000000-0000-4000-8000-0000000006e1'); end $$;
+select is((public.set_pseudonym('Новичок Шесть') ->> 'ok')::boolean, true, 'псевдоним выбран');
+insert into r values ('named', public.place_bet('a6000000-0000-4000-8000-000000000002', 'HOME', 100, 1, 'b6000000-0000-4000-8000-0000000000f2'));
+reset role;
+select is((select res ->> 'ok' from r where name = 'named'), 'true', 'с псевдонимом прогноз принят');
+select is((select count(*) from public.bets where user_id = '00000000-0000-4000-8000-0000000006e1'), 1::bigint,
+  'прогноз создан после выбора псевдонима');
+select is((select balance from public.wallets where user_id = '00000000-0000-4000-8000-0000000006e1'), 9900::bigint,
+  'выбор псевдонима создал кошелек с 10000 монет, прогноз списал 100');
+
+-- Оператор сбросил имя: прогнозы снова закрыты.
+update public.profiles set display_name = null where id = '00000000-0000-4000-8000-0000000006e1';
+do $$ begin perform pg_temp.as_user('00000000-0000-4000-8000-0000000006e1'); end $$;
+insert into r values ('after_reset', public.place_bet('a6000000-0000-4000-8000-000000000001', 'HOME', 100, 1, 'b6000000-0000-4000-8000-0000000000f3'));
+reset role;
+select is((select res ->> 'code' from r where name = 'after_reset'), 'PSEUDONYM_REQUIRED', 'после сброса имени прогнозы закрыты');
 
 select * from finish();
 rollback;

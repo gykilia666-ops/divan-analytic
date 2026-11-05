@@ -45,6 +45,10 @@ const ERRORS: Record<string, { status: number; message: string }> = {
   VALIDATION_ERROR: { status: 400, message: "Проверьте исход и сумму" },
   ACCOUNT_DISABLED: { status: 403, message: "Аккаунт отключен" },
   ACCOUNT_NOT_READY: { status: 409, message: "Аккаунт еще не подготовлен. Войдите заново" },
+  PSEUDONYM_REQUIRED: {
+    status: 403,
+    message: "Сначала выберите псевдоним: без него прогнозы не принимаются",
+  },
   NOT_FOUND: { status: 404, message: "Рынок не найден" },
   MARKET_CLOSED: { status: 409, message: "Прием прогнозов на этот матч закрыт" },
   DATA_STALE: { status: 503, message: "Данные матча устарели, прием временно закрыт" },

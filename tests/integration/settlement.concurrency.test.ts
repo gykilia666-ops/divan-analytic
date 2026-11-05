@@ -40,7 +40,10 @@ async function createUser(): Promise<string> {
     "insert into auth.users (id, email, raw_user_meta_data) values ($1, $2, $3::jsonb)",
     [id, `${id}@test.local`, JSON.stringify({ user_name: "settler" })],
   );
-  await asUser(id, "select public.ensure_user_initialized()", []);
+  // Профиль, кошелек и стартовый кредит создает выбор псевдонима (ADR-075); без него прогнозы закрыты (ADR-074).
+  await asUser(id, "select public.set_pseudonym($1)", [
+    `st-${id.replaceAll("-", "").slice(0, 12)}`,
+  ]);
   return id;
 }
 

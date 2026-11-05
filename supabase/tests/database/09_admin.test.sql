@@ -15,9 +15,9 @@ begin
   perform set_config('request.jwt.claims', json_build_object('sub', p_uid, 'role', 'authenticated')::text, true);
 end;
 $f$;
-do $$ begin perform pg_temp.as_user('00000000-0000-4000-8000-0000000009a1'); perform public.ensure_user_initialized(); end $$;
-do $$ begin perform pg_temp.as_user('00000000-0000-4000-8000-0000000009b1'); perform public.ensure_user_initialized(); end $$;
-do $$ begin perform pg_temp.as_user('00000000-0000-4000-8000-0000000009c1'); perform public.ensure_user_initialized(); end $$;
+do $$ begin perform pg_temp.as_user('00000000-0000-4000-8000-0000000009a1'); perform public.set_pseudonym('Игрок 9a1'); end $$;
+do $$ begin perform pg_temp.as_user('00000000-0000-4000-8000-0000000009b1'); perform public.set_pseudonym('Игрок 9b1'); end $$;
+do $$ begin perform pg_temp.as_user('00000000-0000-4000-8000-0000000009c1'); perform public.set_pseudonym('Игрок 9c1'); end $$;
 reset role;
 insert into public.user_roles (user_id, role) values
   ('00000000-0000-4000-8000-0000000009a1', 'ADMIN'),

@@ -39,7 +39,7 @@ function Time({ iso }: { iso: string | null | undefined }) {
 
 function Stat({ label, value, testId }: { label: string; value: React.ReactNode; testId: string }) {
   return (
-    <div className="rounded border border-border bg-surface p-3">
+    <div className="rounded-lg border border-border bg-surface p-3">
       <dt className="text-sm text-muted">{label}</dt>
       <dd data-testid={testId} className="font-semibold">
         {value}
@@ -70,7 +70,8 @@ export default async function AdminPage() {
       <div className="space-y-2">
         <h1 className="text-2xl font-bold">Админка</h1>
         <p className="text-sm text-muted">
-          Поставщик: {env.SPORTS_PROVIDER}. Время сервера БД: <Time iso={o.now} />.
+          Режим: {env.APP_DATA_MODE}. Поставщик: {env.SPORTS_PROVIDER}. Время сервера БД:{" "}
+          <Time iso={o.now} />.
         </p>
         <SyncButton />
       </div>
@@ -167,7 +168,7 @@ export default async function AdminPage() {
                 <li
                   key={p.marketId}
                   data-testid="admin-pending"
-                  className="rounded border border-border bg-surface p-3"
+                  className="rounded-lg border border-border bg-surface p-3"
                 >
                   <p className="font-medium">
                     {p.homeName} — {p.awayName}
@@ -213,7 +214,7 @@ export default async function AdminPage() {
         {o.runs.length === 0 ? (
           <p>Запусков еще не было.</p>
         ) : (
-          <ul className="divide-y divide-border rounded border border-border bg-surface">
+          <ul className="divide-y divide-border rounded-lg border border-border bg-surface">
             {o.runs.map((r) => (
               <li
                 key={r.id}

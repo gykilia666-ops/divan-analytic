@@ -6,7 +6,7 @@ import {
   LEADERBOARD_MIN_SETTLED,
   missingForLeaderboard,
 } from "@/domain/stats/stats";
-import { requireUser } from "@/server/auth/session";
+import { requirePseudonym } from "@/server/auth/session";
 import { createClient } from "@/server/db/supabase-server";
 import { getMyStats, type MyStats } from "@/server/stats";
 
@@ -25,7 +25,7 @@ async function load(): Promise<MyStats | null> {
 
 function Item({ label, value, testId }: { label: string; value: string; testId: string }) {
   return (
-    <div className="rounded border border-border bg-surface p-3">
+    <div className="rounded-lg border border-border bg-surface p-3">
       <dt className="text-sm text-muted">{label}</dt>
       <dd data-testid={testId} className="text-xl font-semibold">
         {value}
@@ -35,7 +35,7 @@ function Item({ label, value, testId }: { label: string; value: string; testId: 
 }
 
 export default async function MyStatsPage() {
-  await requireUser("/my/stats");
+  await requirePseudonym("/my/stats");
   const data = await load();
 
   if (!data) {
@@ -90,7 +90,9 @@ export default async function MyStatsPage() {
       <p data-testid="stats-place">
         {place
           ? `Место в рейтинге: ${place}.`
-          : `До рейтинга осталось рассчитанных прогнозов: ${missing} (нужно ${LEADERBOARD_MIN_SETTLED}).`}{" "}
+          : missing > 0
+            ? `До рейтинга осталось рассчитанных прогнозов: ${missing} (нужно ${LEADERBOARD_MIN_SETTLED}).`
+            : "Вас нет в рейтинге: аккаунт отключен или псевдоним не выбран."}{" "}
         <Link href="/leaderboard" className="underline underline-offset-4">
           Рейтинг
         </Link>

@@ -62,13 +62,19 @@ export default async function LeaderboardPage() {
       </p>
 
       {board?.source === "demo" ? (
-        <p data-testid="leaderboard-demo" className="rounded border border-border bg-surface p-3">
+        <p
+          data-testid="leaderboard-demo"
+          className="rounded-lg border border-border bg-surface p-3"
+        >
           Демонстрационные данные: вымышленные игроки, прогнозы демо-режима сюда не попадают.
         </p>
       ) : null}
 
       {mine ? (
-        <p data-testid="leaderboard-mine" className="rounded border border-border bg-surface p-3">
+        <p
+          data-testid="leaderboard-mine"
+          className="rounded-lg border border-border bg-surface p-3"
+        >
           {mine.place
             ? `Ваше место: ${mine.place}.`
             : `До рейтинга осталось рассчитанных прогнозов: ${missingForLeaderboard(mine.stats.settled)}.`}{" "}
@@ -88,7 +94,7 @@ export default async function LeaderboardPage() {
           </Link>
         </p>
       ) : (
-        <div className="overflow-x-auto rounded border border-border bg-surface">
+        <div className="overflow-x-auto rounded-lg border border-border bg-surface">
           <table className="w-full text-sm">
             <caption className="sr-only">Рейтинг игроков по чистому игровому результату</caption>
             <thead>

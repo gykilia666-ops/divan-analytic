@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getEnv } from "@/lib/env";
 import { isAllowedOrigin } from "@/lib/origin";
 import { deleteAccount } from "@/server/account/delete-account";
+import { DELETE_CONFIRM_WORD } from "@/lib/pseudonym";
 import { getCurrentProfile, getCurrentUser } from "@/server/auth/session";
 import { createAdminClient } from "@/server/db/supabase-admin";
 import { createClient } from "@/server/db/supabase-server";
@@ -40,9 +41,9 @@ export async function DELETE(request: NextRequest) {
   }
 
   try {
+    // Профиля нет, пока псевдоним не выбран (ADR-075): тогда подтверждение — слово «удалить».
     const profile = await getCurrentProfile();
-    if (!profile) return jsonError(401, "UNAUTHENTICATED", "Требуется вход", requestId);
-    if (parsed.data.confirm.trim() !== profile.displayName) {
+    if (parsed.data.confirm.trim() !== (profile?.displayName ?? DELETE_CONFIRM_WORD)) {
       return jsonError(
         400,
         "CONFIRMATION_MISMATCH",

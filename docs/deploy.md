@@ -33,6 +33,11 @@
 | `APP_DATA_MODE=connected`, `SPORTS_PROVIDER=football-data`, `APP_ORIGIN=https://<сайт>`          | Config                           |
 | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`                               | Config (публичные по назначению) |
 | `SUPABASE_SERVICE_ROLE_KEY` (secret key), `FOOTBALL_DATA_API_KEY`, `CRON_SECRET` (≥ 32 символов) | Secret                           |
+| `LEGAL_OPERATOR_NAME`, `LEGAL_OPERATOR_EMAIL`                                                    | Config (данные оператора ПДн)    |
+
+Без `LEGAL_OPERATOR_*` вход закрыт намеренно (503): политика обязана называть оператора. Миграции (включая
+`20261113000001_legal_consents.sql`, `20261114000001_pseudonyms.sql`, `20261115000001_user_chosen_pseudonym.sql`, `20261116000001_pseudonym_once.sql`, `20261117000001_bets_need_pseudonym.sql`, `20261118000001_profile_on_pseudonym.sql`, `20261119000001_remove_publication_consent.sql`) применяются **до** выпуска кода. Остальное по юридической части —
+[`legal-checklist.md`](./legal-checklist.md).
 
 Регион функций задан в `vercel.json` (`lhr1`). `NEXT_PUBLIC_*` встраиваются при сборке — после их изменения
 нужен новый деплой.

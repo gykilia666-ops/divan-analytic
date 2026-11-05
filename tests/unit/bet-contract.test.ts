@@ -77,6 +77,7 @@ describe("errorResponseFor", () => {
     expect(errorResponseFor("RATE_LIMITED").status).toBe(429);
     expect(errorResponseFor("DATA_STALE").status).toBe(503);
     expect(errorResponseFor("UNAUTHENTICATED").status).toBe(401);
+    expect(errorResponseFor("PSEUDONYM_REQUIRED").status).toBe(403);
   });
   it("неизвестный код не раскрывается клиенту", () => {
     expect(errorResponseFor("SOMETHING_INTERNAL")).toEqual({

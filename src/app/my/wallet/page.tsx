@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { z } from "zod";
 import { KickoffTime } from "@/components/matches/kickoff-time";
-import { ensureUserInitialized } from "@/server/auth/ensure-user";
-import { requireUser } from "@/server/auth/session";
+import { requirePseudonym } from "@/server/auth/session";
 import { createClient } from "@/server/db/supabase-server";
 
 export const metadata: Metadata = { title: "Кошелёк" };
@@ -52,23 +51,13 @@ async function loadWallet(userId: string): Promise<WalletData | null> {
   try {
     const supabase = await createClient();
 
-    let walletRow = await supabase
+    // Кошелек создает set_pseudonym вместе с профилем (ADR-075); страница открывается только с псевдонимом.
+    const walletRow = await supabase
       .from("wallets")
       .select("balance")
       .eq("user_id", userId)
       .maybeSingle();
-    if (walletRow.error) return null;
-
-    if (!walletRow.data) {
-      // Вход был, а инициализация не завершилась (например, сбой БД): безопасно повторяем.
-      await ensureUserInitialized(supabase);
-      walletRow = await supabase
-        .from("wallets")
-        .select("balance")
-        .eq("user_id", userId)
-        .maybeSingle();
-      if (walletRow.error || !walletRow.data) return null;
-    }
+    if (walletRow.error || !walletRow.data) return null;
     const wallet = walletSchema.parse(walletRow.data);
 
     const entriesRes = await supabase
@@ -86,7 +75,7 @@ async function loadWallet(userId: string): Promise<WalletData | null> {
 }
 
 export default async function WalletPage() {
-  const user = await requireUser("/my/wallet");
+  const user = await requirePseudonym("/my/wallet");
   const data = await loadWallet(user.id);
 
   if (!data) {
@@ -115,7 +104,7 @@ export default async function WalletPage() {
         {data.entries.length === 0 ? (
           <p>Операций пока нет.</p>
         ) : (
-          <ul className="divide-y divide-border rounded border border-border bg-surface">
+          <ul className="divide-y divide-border rounded-lg border border-border bg-surface">
             {data.entries.map((entry) => (
               <li
                 key={entry.id}

@@ -30,7 +30,7 @@ export function TimezoneSelect({ selected }: { selected: string | null }) {
       id="filter-tz"
       name="tz"
       defaultValue={value}
-      className="w-full rounded border border-border bg-surface px-2 py-1"
+      className="w-full rounded-lg border border-border bg-surface px-2 py-1"
     >
       {zones.map((zone) => (
         <option key={zone} value={zone}>

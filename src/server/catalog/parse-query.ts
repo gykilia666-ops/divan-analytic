@@ -31,7 +31,7 @@ export function parseCatalogQuery(params: Params): CatalogQuery {
     competition: competition && /^[A-Z0-9]{2,5}$/.test(competition) ? competition : null,
     date: date && isValidYmd(date) ? date : null,
     timeZone: tz && tz.length <= 64 && isValidTimeZone(tz) ? tz : "UTC",
-    scope: CATALOG_SCOPES.includes(scope as CatalogScope) ? (scope as CatalogScope) : "open",
+    scope: CATALOG_SCOPES.includes(scope as CatalogScope) ? (scope as CatalogScope) : "upcoming",
     cursor: cursor && decodeCursor(cursor) ? cursor : null,
     limit: Math.min(Math.max(limitNum, 1), MAX_LIMIT),
   };
@@ -44,7 +44,7 @@ export function catalogSearch(query: CatalogQuery, overrides: Partial<CatalogQue
   if (q.competition) params.set("competition", q.competition);
   if (q.date) params.set("date", q.date);
   if (q.timeZone !== "UTC") params.set("tz", q.timeZone);
-  if (q.scope !== "open") params.set("scope", q.scope);
+  if (q.scope !== "upcoming") params.set("scope", q.scope);
   if (q.cursor) params.set("cursor", q.cursor);
   if (q.limit !== DEFAULT_LIMIT) params.set("limit", String(q.limit));
   const s = params.toString();

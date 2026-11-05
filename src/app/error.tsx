@@ -13,7 +13,7 @@ export default function GlobalError({
       <button
         type="button"
         onClick={reset}
-        className="rounded bg-accent px-4 py-2 font-medium text-accent-fg hover:opacity-90"
+        className="rounded-lg bg-accent px-4 py-2 font-medium text-accent-fg hover:opacity-90"
       >
         Повторить
       </button>

@@ -29,7 +29,8 @@ insert into auth.users (id, email, raw_user_meta_data) values
   ('00000000-0000-4000-8000-0000000008d1', 'd8@test.local', '{"user_name":"stat_d"}'),
   ('00000000-0000-4000-8000-0000000008e1', 'e8@test.local', '{"user_name":"stat_e"}'),
   ('00000000-0000-4000-8000-0000000008f1', 'f8@test.local', '{"user_name":"stat_f"}'),
-  ('00000000-0000-4000-8000-0000000008f2', 'g8@test.local', '{"user_name":"stat_g"}');
+  ('00000000-0000-4000-8000-0000000008f2', 'g8@test.local', '{"user_name":"stat_g"}'),
+  ('00000000-0000-4000-8000-0000000008f3', 'hidden8@test.local', '{"user_name":"stat_h"}');
 
 create function pg_temp.as_user(p_uid text) returns void language plpgsql as $f$
 begin
@@ -42,7 +43,8 @@ create function pg_temp.bets(p_uid text, p_plan text, p_stake int) returns void 
 declare v jsonb; i int;
 begin
   perform pg_temp.as_user(p_uid);
-  perform public.ensure_user_initialized();
+  -- Профиль, кошелек и кредит создаются выбором псевдонима (ADR-075); повторный вызов даст ALREADY_SET, это не ошибка.
+  perform public.set_pseudonym('Игрок ' || right(p_uid, 3));
   for i in 1 .. length(p_plan) loop
     continue when substr(p_plan, i, 1) = '.';
     v := public.place_bet(('a8000000-0000-4000-8000-00000000000' || i)::uuid,
@@ -61,10 +63,17 @@ do $$ begin
   perform pg_temp.bets('00000000-0000-4000-8000-0000000008f1', 'HAAAA', 100);
   perform pg_temp.bets('00000000-0000-4000-8000-0000000008f2', 'HHH', 100);
   perform pg_temp.bets('00000000-0000-4000-8000-0000000008f2', '...AA', 50);
+  perform pg_temp.bets('00000000-0000-4000-8000-0000000008f3', 'HHH', 100);
+  perform pg_temp.bets('00000000-0000-4000-8000-0000000008f3', '...AA', 50);
   perform pg_temp.as_user('00000000-0000-4000-8000-0000000008e1');
-  perform public.ensure_user_initialized();
+  perform public.set_pseudonym('Игрок 8e1');
 end $$;
 reset role;
+
+-- Псевдоним выбирает пользователь (ADR-072); после входа имен нет. Для читаемости проверок задаем имена из метаданных теста.
+update public.profiles p set display_name = u.raw_user_meta_data ->> 'user_name'
+  from auth.users u
+ where u.id = p.id and p.id::text like '00000000-0000-4000-8000-0000000008%';
 
 -- До расчета: у всех только ожидающие, рейтинг пуст для наших.
 select is((select count(*) from public.leaderboard_ranked() r join auth.users u on u.id = r.user_id
@@ -130,9 +139,10 @@ select results_eq(
      join auth.users u on u.id = r.user_id where u.email like '%8@test.local' order by r.place $$,
   $$ values ('stat_a'::text, 6::bigint, 4::bigint, 600::bigint, 200::bigint),
             ('stat_g', 5, 3, 400, 200),
+            ('stat_h', 5, 3, 400, 200),
             ('stat_b', 5, 1, 500, -300),
             ('stat_f', 5, 1, 500, -300) $$,
-  'допуск ≥ 5, отключенный скрыт; порядок: прибыль ↓, рассчитано ↓, user_id'
+  'допуск ≥ 5, отключенный скрыт, отдельного согласия не требуется; порядок: прибыль ↓, рассчитано ↓, user_id'
 );
 select results_eq(
   $$ select r.user_id, r.net_profit from public.leaderboard_ranked() r
@@ -147,6 +157,22 @@ select ok((select count(*) = count(distinct place) and min(place) = 1 and max(pl
            from public.leaderboard_ranked()), 'места уникальны и идут подряд с 1');
 select ok((select count(*) <= 1 from public.leaderboard(1)) and (select count(*) <= 100 from public.leaderboard(100000)),
   'limit ограничен 1..100');
+
+-- ======================================================= рейтинг без отдельного согласия (ADR-076)
+select is((select count(*) from public.leaderboard_ranked() r join auth.users u on u.id = r.user_id
+           where u.email = 'hidden8@test.local'), 1::bigint,
+  'игрок с псевдонимом и 5 рассчитанными попадает в рейтинг без отдельного согласия');
+select is((select count(*) from public.leaderboard() where display_name = 'stat_h'), 1::bigint,
+  'публичный рейтинг содержит такого игрока');
+do $$ begin perform pg_temp.as_user('00000000-0000-4000-8000-0000000008f3'); end $$;
+select ok(public.my_leaderboard_place() is not null, 'место в рейтинге у игрока есть');
+select is((select won_count from public.my_stats()), 3::bigint, 'личная статистика доступна');
+reset role;
+
+-- ======================================================= без псевдонима игрока нет в рейтинге (ADR-072)
+update public.profiles set display_name = null where id = '00000000-0000-4000-8000-0000000008a1';
+select is((select count(*) from public.leaderboard_ranked() where user_id = '00000000-0000-4000-8000-0000000008a1'),
+  0::bigint, 'без псевдонима игрока нет в рейтинге, даже с 5 расчетными прогнозами');
 
 -- ======================================================= приватность и права
 select ok(pg_get_function_result('public.leaderboard(integer)'::regprocedure) !~ '(user_id|email|role|balance)',

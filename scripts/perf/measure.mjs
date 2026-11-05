@@ -55,7 +55,9 @@ async function seedProfile() {
   const exists = await pool.query(
     "select count(*)::int c from public.matches where provider = 'perf'",
   );
-  if (exists.rows[0].c > 0) return false;
+  if (exists.rows[0].c > 0) {
+    return false;
+  }
   const c = await pool.connect();
   try {
     await c.query("begin");
@@ -93,7 +95,8 @@ async function seedProfile() {
         for u in select id from auth.users where email like '%@perf.local' loop
           perform set_config('request.jwt.claims', json_build_object('sub', u.id, 'role', 'authenticated')::text, true);
           perform set_config('role', 'authenticated', true);
-          perform public.ensure_user_initialized();
+          -- Профиль, кошелек и стартовый кредит создаются при выборе псевдонима (ADR-075).
+          perform public.set_pseudonym('Perf ' || substr(replace(u.id::text, '-', ''), 1, 10));
           perform set_config('role', 'postgres', true);
         end loop;
       end $$;

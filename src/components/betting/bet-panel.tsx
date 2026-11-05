@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getEnv } from "@/lib/env";
-import { getCurrentUser } from "@/server/auth/session";
+import { getCurrentProfile, getCurrentUser } from "@/server/auth/session";
 import { getMyBalance, getMyBetForMarket } from "@/server/betting/wallet";
 import type { CatalogMatch } from "@/server/catalog/types";
 import { createClient } from "@/server/db/supabase-server";
@@ -28,7 +28,7 @@ async function loadPanelData(marketId: string, userId: string) {
 
 /** Что показать под коэффициентами: купон, уже сделанный прогноз или причину, почему купона нет. */
 export async function BetPanel({ match }: { match: CatalogMatch }) {
-  const box = "rounded border border-border bg-surface p-3 text-sm";
+  const box = "rounded-lg border border-border bg-surface p-3 text-sm";
 
   if (getEnv().APP_DATA_MODE !== "connected") {
     return (
@@ -51,6 +51,23 @@ export async function BetPanel({ match }: { match: CatalogMatch }) {
           Войдите через GitHub
         </Link>
         , чтобы сделать прогноз.
+      </p>
+    );
+  }
+
+  // Без псевдонима прогноз не принимает и БД (ADR-074); здесь вместо купона объясняем, что делать.
+  const profile = await getCurrentProfile();
+  if (!profile?.displayName && match.acceptance.accepting) {
+    return (
+      <p className={box} data-testid="bet-panel-pseudonym">
+        Чтобы сделать прогноз, сначала{" "}
+        <Link
+          href={`/my/pseudonym?next=${encodeURIComponent(`/matches/${match.id}`)}`}
+          className="underline"
+        >
+          выберите псевдоним
+        </Link>
+        . Без него прогнозы не принимаются, а вас нет в рейтинге.
       </p>
     );
   }

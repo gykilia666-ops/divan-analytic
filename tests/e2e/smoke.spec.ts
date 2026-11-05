@@ -2,7 +2,9 @@ import { expect, test } from "@playwright/test";
 
 test("главная: назначение, дисклеймер, демо-метка", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1, name: "Диванный аналитик" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Ну ты то точно разбираешься!" }),
+  ).toBeVisible();
   await expect(page.getByTestId("disclaimer")).toContainText("Монеты не имеют денежной стоимости");
   await expect(page.getByTestId("mode-banner")).toContainText("ДЕМО-РЕЖИМ");
 });
@@ -23,7 +25,9 @@ test("правила и приватность открываются", async ({
   await page.goto("/rules");
   await expect(page.getByRole("heading", { name: "Правила" })).toBeVisible();
   await page.goto("/privacy");
-  await expect(page.getByRole("heading", { name: "Приватность" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Политика обработки персональных данных" }),
+  ).toBeVisible();
 });
 
 test("health минимален и без кеширования", async ({ request }) => {

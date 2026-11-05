@@ -53,7 +53,10 @@ async function createUser(balance = 10_000): Promise<string> {
     await client.query("select set_config('request.jwt.claims', $1, true)", [
       JSON.stringify({ sub: id, role: "authenticated" }),
     ]);
-    await client.query("select public.ensure_user_initialized()");
+    // Профиль, кошелек и стартовый кредит создает выбор псевдонима (ADR-075); без него прогнозы закрыты (ADR-074).
+    await client.query("select public.set_pseudonym($1)", [
+      `it-${id.replaceAll("-", "").slice(0, 12)}`,
+    ]);
     await client.query("commit");
 
     if (balance !== 10_000) {

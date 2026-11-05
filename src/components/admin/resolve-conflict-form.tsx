@@ -57,13 +57,13 @@ export function ResolveConflictForm({ matchId }: { matchId: string }) {
           maxLength={500}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? `${id}-error` : undefined}
-          className="rounded border border-border bg-bg px-2 py-1"
+          className="rounded-lg border border-border bg-bg px-2 py-1"
         />
       </div>
       <button
         type="submit"
         disabled={pending}
-        className="rounded border border-border px-3 py-1 disabled:opacity-60"
+        className="rounded-lg border border-border px-3 py-1 disabled:opacity-60"
       >
         Принять итог
       </button>

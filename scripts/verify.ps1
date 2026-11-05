@@ -155,6 +155,9 @@ if (Test-Path (Join-Path $root ".next")) {
 Run-Step "check (format, lint, typecheck, unit)" { npm run check } | Out-Null
 $built = Run-Step "build" { npm run build }
 Run-Step "e2e" { npm run e2e } | Out-Null
+if ($built -and $dockerOk) {
+  Run-Step "e2e (connected, local Supabase)" { npm run e2e:connected } | Out-Null
+}
 
 if ($built -and $dockerOk) {
   Test-Sync "fixtures"

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { DISCLAIMER } from "@/components/layout/site-footer";
 
 export const metadata: Metadata = { title: "Правила" };
@@ -8,14 +9,26 @@ export default function RulesPage() {
     <article className="max-w-2xl space-y-6">
       <h1 className="text-2xl font-bold">Правила</h1>
       <p>{DISCLAIMER}</p>
+      <p>
+        Сервис только для лиц старше 18 лет. Эти правила — часть{" "}
+        <Link href="/terms" className="underline underline-offset-4">
+          Пользовательского соглашения
+        </Link>
+        .
+      </p>
 
       <section aria-labelledby="bets" className="space-y-2">
         <h2 id="bets" className="text-xl font-semibold">
           Прогнозы
         </h2>
         <ul className="list-disc space-y-2 pl-6">
-          <li>Прогнозы принимаются после входа через GitHub.</li>
-          <li>Новый пользователь однократно получает 10 000 виртуальных монет.</li>
+          <li>
+            Прогнозы принимаются после входа через GitHub и принятия Соглашения. Игровые данные не
+            являются имуществом: при смене правил или завершении проекта их могут сбросить.
+          </li>
+          <li>
+            Новый пользователь однократно получает 10 000 виртуальных монет после выбора псевдонима.
+          </li>
           <li>
             Прогноз — один исход одного матча: победа хозяев, ничья или победа гостей. Учитывается
             только основное время, без дополнительного времени и пенальти.
@@ -68,7 +81,7 @@ export default function RulesPage() {
           </li>
           <li>
             Место в рейтинге — по чистому результату (выплаты минус ставки), а не по балансу. В
-            рейтинг попадают игроки с 5 и более рассчитанными прогнозами.
+            рейтинг попадают игроки с выбранным псевдонимом и 5 и более рассчитанными прогнозами.
           </li>
         </ul>
       </section>

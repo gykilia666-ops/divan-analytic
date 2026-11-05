@@ -11,6 +11,8 @@ const PAGES = [
   "/leaderboard",
   "/rules",
   "/privacy",
+  "/terms",
+  "/consent",
   "/login",
 ];
 

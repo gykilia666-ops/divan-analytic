@@ -18,12 +18,12 @@ export function MatchCard({
   return (
     <li
       data-testid="match-card"
-      className="flex flex-col rounded border border-border bg-surface p-4"
+      className="flex flex-col rounded-lg border border-border bg-surface p-4"
       aria-label={`${match.home} — ${match.away}`}
     >
       <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted">
         <span>{match.competition.name}</span>
-        <span className="rounded border border-border px-2 py-0.5 font-medium text-fg">
+        <span className="rounded-lg border border-border px-2 py-0.5 font-medium text-fg">
           Статус: {MATCH_STATUS_LABEL[match.status]}
         </span>
       </div>

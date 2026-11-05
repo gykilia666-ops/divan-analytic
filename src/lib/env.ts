@@ -25,6 +25,9 @@ const schema = z
     SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),
     FOOTBALL_DATA_API_KEY: z.string().min(1).optional(),
     CRON_SECRET: z.string().min(32).optional(),
+    // Оператор персональных данных (Политика, Согласия). Не секреты, но и не в репозитории (ADR-066).
+    LEGAL_OPERATOR_NAME: z.string().max(300).optional(),
+    LEGAL_OPERATOR_EMAIL: z.string().max(300).optional(),
   })
   .superRefine((env, ctx) => {
     const need = (key: keyof typeof env, why: string) => {

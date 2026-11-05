@@ -31,14 +31,20 @@ $f$;
 
 do $$ declare v jsonb; begin
   perform pg_temp.as_user('00000000-0000-4000-8000-000000000bd1');
-  perform public.ensure_user_initialized();
+  perform public.set_pseudonym('Уходящий игрок');
   v := public.place_bet('ab000000-0000-4000-8000-000000000001', 'HOME', 100, 1, gen_random_uuid());
   if not (v ->> 'ok')::boolean then raise exception 'bet failed: %', v; end if;
   perform pg_temp.as_user('00000000-0000-4000-8000-000000000bd2');
-  perform public.ensure_user_initialized();
+  perform public.set_pseudonym('Остающийся игрок');
 end $$;
 reset role;
 insert into public.user_roles (user_id, role) values ('00000000-0000-4000-8000-000000000bd1', 'ADMIN');
+
+-- До удаления в профиле выбранный пользователем псевдоним, а не логин и аватар GitHub (ADR-072).
+select is((select display_name from public.profiles where id = '00000000-0000-4000-8000-000000000bd1'),
+  'Уходящий игрок', 'до удаления в профиле выбранный псевдоним');
+select is((select avatar_url from public.profiles where id = '00000000-0000-4000-8000-000000000bd1'),
+  null, 'до удаления аватар GitHub не сохранен');
 
 -- ======================================================= удаление
 create temporary table del_result (r jsonb);
@@ -54,7 +60,7 @@ select is((select array_agg(r ->> 'alreadyDeleted' order by r ->> 'alreadyDelete
   array['false', 'true'], 'удаление выполнено; повтор — без ошибок (идемпотентно)');
 select is((select array[display_name, coalesce(avatar_url, 'null')] from public.profiles
            where id = '00000000-0000-4000-8000-000000000bd1'),
-  array['Удалённый игрок', 'null'], 'имя и аватар обезличены');
+  array['Удалённый игрок', 'null'], 'псевдоним заменен на «Удалённый игрок»');
 select ok((select deleted_at is not null and disabled_at is not null from public.profiles
            where id = '00000000-0000-4000-8000-000000000bd1'), 'профиль помечен удаленным и отключен');
 select is((select count(*) from public.user_roles where user_id = '00000000-0000-4000-8000-000000000bd1'),
@@ -74,15 +80,40 @@ do $$ begin perform pg_temp.as_user('00000000-0000-4000-8000-000000000bd1'); end
 select is(public.place_bet('ab000000-0000-4000-8000-000000000002', 'HOME', 100, 1, gen_random_uuid()) ->> 'code',
   'ACCOUNT_DISABLED', 'удаленный аккаунт не делает прогнозы');
 select is(public.is_admin(), false, 'удаленный аккаунт не администратор');
--- RLS разрешает правку имени только неотключенному профилю: запрос проходит, но не меняет ни одной строки.
-update public.profiles set display_name = 'вернуть' where id = '00000000-0000-4000-8000-000000000bd1';
+-- Имя меняется только через set_pseudonym (прямой UPDATE закрыт, ADR-072); у удаленного профиля он не находит аккаунт.
+select throws_ok($$ update public.profiles set display_name = 'вернуть'
+  where id = '00000000-0000-4000-8000-000000000bd1' $$, '42501', null,
+  'прямая правка имени профиля закрыта');
+select is(public.set_pseudonym('Вернуть имя') ->> 'code', 'ACCOUNT_NOT_FOUND',
+  'удаленный аккаунт не может снова выбрать псевдоним');
 reset role;
 select is((select display_name from public.profiles where id = '00000000-0000-4000-8000-000000000bd1'),
   'Удалённый игрок', 'имя удаленного профиля не восстанавливается самим пользователем');
 
 -- Другие пользователи не затронуты.
-select is((select array[display_name] from public.profiles where id = '00000000-0000-4000-8000-000000000bd2'),
-  array['staying_user'], 'другой пользователь не затронут');
+select ok((select display_name = 'Остающийся игрок' and disabled_at is null and deleted_at is null from public.profiles
+           where id = '00000000-0000-4000-8000-000000000bd2'), 'другой пользователь не затронут');
+
+-- Пользователь без профиля (псевдоним не выбирал) тоже может уйти: профиль не создается, согласия отзываются (ADR-075).
+insert into auth.users (id, email, raw_user_meta_data) values
+  ('00000000-0000-4000-8000-000000000bd3', 'idle@test.local', '{}');
+create temporary table del_idle (r jsonb);
+grant insert on del_idle to authenticated;
+do $$ begin
+  perform pg_temp.as_user('00000000-0000-4000-8000-000000000bd3');
+  perform public.record_consents('2026-11-05');
+  insert into del_idle select public.delete_my_account();
+  insert into del_idle select public.delete_my_account();
+end $$;
+reset role;
+select is((select array_agg(r ->> 'alreadyDeleted' order by r ->> 'alreadyDeleted') from del_idle),
+  array['false', 'true'], 'удаление без профиля выполнено; повтор — без ошибок');
+select is((select count(*) from public.profiles where id = '00000000-0000-4000-8000-000000000bd3'), 0::bigint,
+  'удаление не создает профиль');
+select is((select count(*) from public.audit_events where kind = 'ACCOUNT_DELETED'
+           and user_id = '00000000-0000-4000-8000-000000000bd3'), 1::bigint, 'удаление записано в аудит один раз');
+select is((select count(*) from public.user_consents where user_id = '00000000-0000-4000-8000-000000000bd3'
+           and granted = false), 2::bigint, 'два действующих согласия отозваны');
 
 -- Права.
 select ok(not has_function_privilege('anon', 'public.delete_my_account()', 'execute'), 'гость не вызывает удаление');

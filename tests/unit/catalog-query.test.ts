@@ -26,7 +26,7 @@ describe("parseCatalogQuery", () => {
       competition: null,
       date: null,
       timeZone: "UTC",
-      scope: "open",
+      scope: "upcoming",
       cursor: null,
       limit: 20,
     });
@@ -60,7 +60,7 @@ describe("parseCatalogQuery", () => {
       null,
       null,
       "UTC",
-      "open",
+      "upcoming",
       null,
       20,
     ]);
@@ -72,8 +72,12 @@ describe("parseCatalogQuery", () => {
   });
   it("строка запроса без значений по умолчанию", () => {
     expect(catalogSearch(parseCatalogQuery({}))).toBe("");
+    // «Предстоящие» — значение по умолчанию (ADR-078), в адрес не попадает.
     expect(catalogSearch(parseCatalogQuery({ tz: "Asia/Krasnoyarsk", scope: "upcoming" }))).toBe(
-      "?tz=Asia%2FKrasnoyarsk&scope=upcoming",
+      "?tz=Asia%2FKrasnoyarsk",
+    );
+    expect(catalogSearch(parseCatalogQuery({ tz: "Asia/Krasnoyarsk", scope: "finished" }))).toBe(
+      "?tz=Asia%2FKrasnoyarsk&scope=finished",
     );
   });
 });

@@ -9,7 +9,7 @@ insert into auth.users (id, email, raw_user_meta_data) values
 do $$ begin
   perform set_config('role', 'authenticated', true);
   perform set_config('request.jwt.claims', '{"sub":"00000000-0000-4000-8000-000000000aa1","role":"authenticated"}', true);
-  perform public.ensure_user_initialized();
+  perform public.set_pseudonym('Игрок Десять');
 end $$;
 reset role;
 insert into public.user_roles (user_id, role) values ('00000000-0000-4000-8000-000000000aa1', 'ADMIN');
