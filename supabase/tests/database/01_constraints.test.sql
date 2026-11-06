@@ -1,4 +1,4 @@
--- Ограничения, защитные триггеры и инварианты журнала (CLAUDE.md §8.2). Запускается от postgres.
+-- Ограничения, защитные триггеры и инварианты журнала (docs/requirements.md §8.2). Запускается от postgres.
 begin;
 create extension if not exists pgtap with schema extensions;
 select no_plan();

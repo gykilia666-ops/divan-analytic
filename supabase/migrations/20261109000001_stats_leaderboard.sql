@@ -1,4 +1,4 @@
--- Статистика и рейтинг (CLAUDE.md §6.9, §6.10). Этап 8.
+-- Статистика и рейтинг (docs/requirements.md §6.9, §6.10). Этап 8.
 -- Учитываются только рассчитанные WON/LOST; VOID и PENDING не входят в win rate, ROI и прибыль;
 -- INITIAL_CREDIT и ADMIN_ADJUSTMENT — не игровая прибыль (считаем по bets, а не по журналу).
 

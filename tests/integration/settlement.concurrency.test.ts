@@ -3,7 +3,7 @@ import { Pool } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 /**
- * Конкурентный расчет и fencing (CLAUDE.md §10.4, §18.2). Требует локальный Supabase.
+ * Конкурентный расчет и fencing (docs/requirements.md §10.4, §18.2). Требует локальный Supabase.
  * Данные остаются в локальной БД под поставщиком it-settle-* (журнал неизменяем); db:reset их убирает.
  */
 const DATABASE_URL =

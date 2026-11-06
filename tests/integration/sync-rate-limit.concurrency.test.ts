@@ -3,7 +3,7 @@ import { Pool } from "pg";
 import { afterAll, describe, expect, it } from "vitest";
 
 /**
- * Общий лимитер запросов к поставщику (CLAUDE.md §10.5): cron и ручной запуск делят бюджет.
+ * Общий лимитер запросов к поставщику (docs/requirements.md §10.5): cron и ручной запуск делят бюджет.
  * Требует локальный Supabase (`npm run db:start`). Пароль — стандартный локальный, не секрет.
  */
 const DATABASE_URL =

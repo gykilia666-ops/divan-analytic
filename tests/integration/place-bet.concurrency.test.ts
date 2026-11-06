@@ -3,7 +3,7 @@ import { Pool } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 /**
- * Конкурентный прием прогнозов (CLAUDE.md §18.2). Требует локальный Supabase (`npm run db:start`).
+ * Конкурентный прием прогнозов (docs/requirements.md §18.2). Требует локальный Supabase (`npm run db:start`).
  * Прогнозы и журнал неизменяемы, поэтому данные теста остаются в локальной БД под своим
  * поставщиком (it-bet-*); `npm run db:reset` их убирает. Пароль — стандартный локальный, не секрет.
  */

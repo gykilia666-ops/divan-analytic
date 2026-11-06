@@ -1,0 +1,624 @@
+openapi: 3.1.0
+info:
+  title: Диванный аналитик — HTTP API
+  version: 1.0.0
+  description: |
+    Публичные, личные и служебные маршруты приложения. Справочник с пояснениями — docs/api.md.
+    Изменяющие запросы требуют заголовок Origin, равный адресу сайта; иначе 403 до любой проверки.
+    Коэффициенты — целые «милли» (2350 = 2.35), монеты — целые, время — ISO 8601 UTC.
+servers:
+  - url: https://divan-analytic.vercel.app
+    description: production
+  - url: http://localhost:3000
+    description: локальная разработка
+
+tags:
+  - name: public
+  - name: me
+  - name: admin
+  - name: internal
+
+paths:
+  /api/health:
+    get:
+      tags: [public]
+      summary: Минимальная проверка доступности
+      responses:
+        "200":
+          description: Работает
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+
+  /api/v1/matches:
+    get:
+      tags: [public]
+      summary: Каталог матчей
+      parameters:
+        - {
+            name: scope,
+            in: query,
+            schema: { type: string, enum: [upcoming, finished, all], default: upcoming },
+          }
+        - {
+            name: competition,
+            in: query,
+            schema: { type: string, pattern: "^[A-Z0-9]{2,5}$" },
+            example: PL,
+          }
+        - {
+            name: date,
+            in: query,
+            schema: { type: string, format: date },
+            description: День в зоне tz,
+          }
+        - { name: tz, in: query, schema: { type: string, default: UTC }, example: Asia/Novosibirsk }
+        - {
+            name: limit,
+            in: query,
+            schema: { type: integer, minimum: 1, maximum: 100, default: 20 },
+          }
+        - { name: cursor, in: query, schema: { type: string } }
+      responses:
+        "200":
+          description: Страница каталога (Cache-Control public, s-maxage=30)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, meta]
+                properties:
+                  data:
+                    type: object
+                    required: [items, nextCursor, competitions]
+                    properties:
+                      items: { type: array, items: { $ref: "#/components/schemas/Match" } }
+                      nextCursor: { type: [string, "null"] }
+                      competitions:
+                        { type: array, items: { $ref: "#/components/schemas/Competition" } }
+                  meta:
+                    allOf:
+                      - $ref: "#/components/schemas/Meta"
+                      - type: object
+                        properties:
+                          lastSyncedAt: { type: [string, "null"], format: date-time }
+                          now: { type: string, format: date-time }
+                          source: { type: string, enum: [demo, database] }
+        "503": { $ref: "#/components/responses/Error" }
+
+  /api/v1/matches/{id}:
+    get:
+      tags: [public]
+      summary: Один матч
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Матч
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/Match" }
+                  meta: { $ref: "#/components/schemas/Meta" }
+        "404": { $ref: "#/components/responses/Error" }
+        "503": { $ref: "#/components/responses/Error" }
+
+  /api/v1/leaderboard:
+    get:
+      tags: [public]
+      summary: Публичный рейтинг (Cache-Control public, s-maxage=60)
+      responses:
+        "200":
+          description: Рейтинг
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    required: [entries, minSettled]
+                    properties:
+                      minSettled: { type: integer, const: 5 }
+                      entries:
+                        { type: array, items: { $ref: "#/components/schemas/LeaderboardEntry" } }
+                  meta: { $ref: "#/components/schemas/Meta" }
+        "503": { $ref: "#/components/responses/Error" }
+
+  /api/v1/me:
+    get:
+      tags: [me]
+      summary: Текущий пользователь
+      security: [{ session: [] }]
+      responses:
+        "200":
+          description: Пользователь; displayName null — псевдоним не выбран
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      id: { type: string, format: uuid }
+                      displayName: { type: [string, "null"] }
+                      avatarUrl: { type: "null" }
+        "401": { $ref: "#/components/responses/Error" }
+
+  /api/v1/me/pseudonym:
+    post:
+      tags: [me]
+      summary: Выбрать псевдоним (один раз); создает профиль, кошелек и 10 000 монет
+      security: [{ session: [] }]
+      parameters: [{ $ref: "#/components/parameters/Origin" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              additionalProperties: false
+              properties:
+                name: { type: string, minLength: 3, maxLength: 24, example: Тихий Форвард }
+      responses:
+        "200":
+          description: Псевдоним выбран (или повтор того же имени)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: object, properties: { displayName: { type: string } } }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "409": { description: "NAME_TAKEN, ALREADY_SET", $ref: "#/components/responses/Error" }
+        "422":
+          {
+            description: "INVALID_NAME, RESERVED_NAME, MATCHES_ACCOUNT",
+            $ref: "#/components/responses/Error",
+          }
+        "429": { $ref: "#/components/responses/Error" }
+
+  /api/v1/bets:
+    post:
+      tags: [me]
+      summary: Сделать прогноз
+      description: |
+        Решение принимает функция БД в одной транзакции. Повтор с тем же idempotencyKey и теми же данными
+        возвращает исходный прогноз (200, replay = true) без второго списания.
+      security: [{ session: [] }]
+      parameters: [{ $ref: "#/components/parameters/Origin" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BetCommand" }
+      responses:
+        "201":
+          {
+            description: Принят,
+            content: { application/json: { schema: { $ref: "#/components/schemas/BetAccepted" } } },
+          }
+        "200":
+          {
+            description: Повтор (replay),
+            content: { application/json: { schema: { $ref: "#/components/schemas/BetAccepted" } } },
+          }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "403":
+          {
+            description: "FORBIDDEN, ACCOUNT_DISABLED, PSEUDONYM_REQUIRED",
+            $ref: "#/components/responses/Error",
+          }
+        "404": { $ref: "#/components/responses/Error" }
+        "409":
+          {
+            description: "MARKET_CLOSED, QUOTE_CHANGED, ALREADY_PLACED, IDEMPOTENCY_CONFLICT, ACCOUNT_NOT_READY",
+            $ref: "#/components/responses/Error",
+          }
+        "422": { description: INSUFFICIENT_BALANCE, $ref: "#/components/responses/Error" }
+        "429": { $ref: "#/components/responses/Error" }
+        "503":
+          { description: "DATA_STALE, SERVICE_UNAVAILABLE", $ref: "#/components/responses/Error" }
+
+  /api/v1/me/bets:
+    get:
+      tags: [me]
+      summary: История прогнозов
+      security: [{ session: [] }]
+      parameters:
+        - { name: status, in: query, schema: { $ref: "#/components/schemas/BetStatus" } }
+        - {
+            name: limit,
+            in: query,
+            schema: { type: integer, minimum: 1, maximum: 100, default: 20 },
+          }
+        - { name: cursor, in: query, schema: { type: string } }
+      responses:
+        "200":
+          description: Страница истории
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      items: { type: array, items: { $ref: "#/components/schemas/BetHistoryItem" } }
+                      nextCursor: { type: [string, "null"] }
+        "401": { $ref: "#/components/responses/Error" }
+
+  /api/v1/me/stats:
+    get:
+      tags: [me]
+      summary: Личная статистика и место в рейтинге
+      security: [{ session: [] }]
+      responses:
+        "200":
+          description: Статистика
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      stats: { $ref: "#/components/schemas/Stats" }
+                      place: { type: [integer, "null"] }
+        "401": { $ref: "#/components/responses/Error" }
+
+  /api/v1/me/account:
+    delete:
+      tags: [me]
+      summary: Удалить аккаунт (обезличивание, журнал сохраняется)
+      security: [{ session: [] }]
+      parameters: [{ $ref: "#/components/parameters/Origin" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [confirm]
+              properties:
+                confirm:
+                  { type: string, maxLength: 100, description: Точный псевдоним или «удалить» }
+      responses:
+        "200":
+          {
+            description: Удален,
+            content:
+              {
+                application/json:
+                  {
+                    schema:
+                      {
+                        type: object,
+                        properties:
+                          { data: { type: object, properties: { deleted: { const: true } } } },
+                      },
+                  },
+              },
+          }
+        "400":
+          {
+            description: "VALIDATION_ERROR, CONFIRMATION_MISMATCH",
+            $ref: "#/components/responses/Error",
+          }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "503": { $ref: "#/components/responses/Error" }
+
+  /api/admin/jobs:
+    get:
+      tags: [admin]
+      summary: Обзор задания и очередь расчета
+      security: [{ session: [] }]
+      responses:
+        "200": { description: Обзор (см. docs/api.md) }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+
+  /api/admin/sync:
+    post:
+      tags: [admin]
+      summary: Ручной запуск конвейера (не чаще раза в 5 минут)
+      security: [{ session: [] }]
+      parameters: [{ $ref: "#/components/parameters/Origin" }]
+      requestBody: { content: { application/json: { schema: { type: object } } } }
+      responses:
+        "200":
+          {
+            description: Сводка запуска,
+            content:
+              {
+                application/json:
+                  {
+                    schema:
+                      {
+                        type: object,
+                        properties: { data: { $ref: "#/components/schemas/JobSummary" } },
+                      },
+                  },
+              },
+          }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "429": { $ref: "#/components/responses/Error" }
+
+  /api/admin/conflicts:
+    post:
+      tags: [admin]
+      summary: Снять паузу конфликта итога
+      security: [{ session: [] }]
+      parameters: [{ $ref: "#/components/parameters/Origin" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [matchId, note]
+              properties:
+                matchId: { type: string, format: uuid }
+                note: { type: string, minLength: 5, maxLength: 500 }
+      responses:
+        "200": { description: Пауза снята }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "409": { description: NO_CONFLICT, $ref: "#/components/responses/Error" }
+
+  /api/internal/jobs/sync:
+    post:
+      tags: [internal]
+      summary: Конвейер синхронизации и расчета (расписание, каждые 15 минут)
+      security: [{ cronBearer: [] }]
+      responses:
+        "200":
+          {
+            description: Сводка запуска,
+            content:
+              {
+                application/json:
+                  {
+                    schema:
+                      {
+                        type: object,
+                        properties: { data: { $ref: "#/components/schemas/JobSummary" } },
+                      },
+                  },
+              },
+          }
+        "401": { $ref: "#/components/responses/Error" }
+        "404": { description: Режим demo, $ref: "#/components/responses/Error" }
+        "503": { $ref: "#/components/responses/Error" }
+
+components:
+  securitySchemes:
+    session:
+      type: apiKey
+      in: cookie
+      name: sb-<project-ref>-auth-token
+      description: Сессия Supabase после входа через GitHub
+    cronBearer:
+      type: http
+      scheme: bearer
+      description: CRON_SECRET (хранится в Supabase Vault и Vercel)
+
+  parameters:
+    Origin:
+      name: Origin
+      in: header
+      required: true
+      schema: { type: string, example: "https://divan-analytic.vercel.app" }
+
+  responses:
+    Error:
+      description: Ошибка по контракту (код в error.code)
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  schemas:
+    Meta:
+      type: object
+      required: [requestId]
+      properties:
+        requestId: { type: string, format: uuid }
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message, requestId]
+          properties:
+            code:
+              type: string
+              examples:
+                [
+                  VALIDATION_ERROR,
+                  UNAUTHENTICATED,
+                  FORBIDDEN,
+                  INSUFFICIENT_BALANCE,
+                  QUOTE_CHANGED,
+                  RATE_LIMITED,
+                ]
+            message: { type: string }
+            requestId: { type: string, format: uuid }
+    HealthResponse:
+      type: object
+      properties:
+        data: { type: object, properties: { status: { const: ok } } }
+        meta: { $ref: "#/components/schemas/Meta" }
+    Competition:
+      type: object
+      required: [code, name]
+      properties:
+        code: { type: string, example: PL }
+        name: { type: string, example: Premier League }
+    Odds:
+      type: object
+      required: [home, draw, away]
+      properties:
+        home: { type: integer, minimum: 1100, maximum: 12000 }
+        draw: { type: integer, minimum: 1100, maximum: 12000 }
+        away: { type: integer, minimum: 1100, maximum: 12000 }
+    Market:
+      type: object
+      required: [id, status, quoteVersion, modelVersion, odds]
+      properties:
+        id: { type: string, format: uuid }
+        status: { type: string, enum: [OPEN, SUSPENDED, CLOSED, RESOLVED, VOID] }
+        quoteVersion: { type: integer, minimum: 1 }
+        modelVersion: { type: string, example: demo-v1 }
+        odds: { $ref: "#/components/schemas/Odds" }
+    Acceptance:
+      type: object
+      required: [accepting, reason, closesAt]
+      properties:
+        accepting: { type: boolean }
+        reason:
+          {
+            type: string,
+            enum: [OPEN, NO_MARKET, MARKET_NOT_OPEN, MATCH_NOT_SCHEDULED, CUTOFF, STALE],
+          }
+        closesAt: { type: string, format: date-time }
+    Match:
+      type: object
+      required:
+        [id, competition, home, away, kickoffAt, status, resultKind, stale, market, acceptance]
+      properties:
+        id: { type: string }
+        competition: { $ref: "#/components/schemas/Competition" }
+        home: { type: string }
+        away: { type: string }
+        kickoffAt: { type: string, format: date-time }
+        status: { type: string, enum: [SCHEDULED, LIVE, FINISHED, CANCELLED, POSTPONED, SUSPENDED] }
+        homeScore: { type: [integer, "null"] }
+        awayScore: { type: [integer, "null"] }
+        resultKind: { type: string, enum: [NONE, REGULAR, AMBIGUOUS] }
+        lastSeenAt: { type: [string, "null"], format: date-time }
+        stale: { type: boolean }
+        market: { oneOf: [{ $ref: "#/components/schemas/Market" }, { type: "null" }] }
+        acceptance: { $ref: "#/components/schemas/Acceptance" }
+        note: { type: [string, "null"] }
+    LeaderboardEntry:
+      type: object
+      properties:
+        place: { type: integer, minimum: 1 }
+        displayName: { type: string }
+        avatarUrl: { type: "null" }
+        settled: { type: integer }
+        won: { type: integer }
+        stakes: { type: integer }
+        netProfit: { type: integer }
+        winRate: { type: [number, "null"] }
+        roi: { type: [number, "null"] }
+    BetStatus:
+      type: string
+      enum: [PENDING, WON, LOST, VOID]
+    BetCommand:
+      type: object
+      additionalProperties: false
+      required: [marketId, outcome, stake, quoteVersion, idempotencyKey]
+      properties:
+        marketId: { type: string, format: uuid }
+        outcome: { type: string, enum: [HOME, DRAW, AWAY] }
+        stake: { type: integer, minimum: 10, maximum: 1000 }
+        quoteVersion: { type: integer, minimum: 1 }
+        idempotencyKey: { type: string, format: uuid }
+    PlacedBet:
+      type: object
+      properties:
+        id: { type: string }
+        marketId: { type: string }
+        outcome: { type: string, enum: [HOME, DRAW, AWAY] }
+        stake: { type: integer }
+        acceptedOddsMilli: { type: integer }
+        potentialPayout:
+          { type: integer, description: "floor(stake × odds / 1000), включает сумму" }
+        status: { $ref: "#/components/schemas/BetStatus" }
+        createdAt: { type: string, format: date-time }
+    BetAccepted:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            bet: { $ref: "#/components/schemas/PlacedBet" }
+            balance: { type: [integer, "null"] }
+            replay: { type: boolean }
+        meta: { $ref: "#/components/schemas/Meta" }
+    BetHistoryItem:
+      allOf:
+        - $ref: "#/components/schemas/PlacedBet"
+        - type: object
+          properties:
+            actualPayout: { type: [integer, "null"] }
+            settledAt: { type: [string, "null"], format: date-time }
+            match:
+              type: object
+              properties:
+                id: { type: string }
+                kickoffAt: { type: string, format: date-time }
+                competition: { type: string }
+                home: { type: string }
+                away: { type: string }
+                homeScore: { type: [integer, "null"] }
+                awayScore: { type: [integer, "null"] }
+    Stats:
+      type: object
+      properties:
+        won: { type: integer }
+        lost: { type: integer }
+        void: { type: integer }
+        pending: { type: integer }
+        stakes: { type: integer }
+        payouts: { type: integer }
+        settled: { type: integer }
+        profit: { type: integer }
+        winRate: { type: [number, "null"] }
+        roi: { type: [number, "null"] }
+    JobSummary:
+      type: object
+      properties:
+        status: { type: string, enum: [OK, PARTIAL, SKIPPED, FAILED] }
+        reason: { type: string, enum: [LEASE_HELD] }
+        generation: { type: [integer, "null"] }
+        sync: { type: [object, "null"] }
+        markets: { type: [object, "null"] }
+        results:
+          type: [object, "null"]
+          properties:
+            {
+              observed: { type: integer },
+              confirmed: { type: integer },
+              conflicts: { type: integer },
+            }
+        settlement:
+          type: [object, "null"]
+          properties:
+            {
+              resolved: { type: integer },
+              void: { type: integer },
+              skipped: { type: integer },
+              failed: { type: integer },
+            }
+        cleanup: { type: [object, "null"] }
+        errors:
+          {
+            type: array,
+            items:
+              { type: object, properties: { step: { type: string }, message: { type: string } } },
+          }

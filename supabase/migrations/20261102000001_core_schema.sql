@@ -1,4 +1,4 @@
--- Диванный аналитик: ядро схемы (CLAUDE.md §8). Этап 2.
+-- Диванный аналитик: ядро схемы (docs/requirements.md §8). Этап 2.
 -- Служебные таблицы (job_runs, job_leases, sync_cursors, provider_rate_limits, audit_events,
 -- rate_limit_buckets, user_stats) создаются на этапах 7–9 отдельными миграциями (expand-only).
 -- Внешние ключи без каскадного удаления: журнал и прогнозы не удаляются автоматически.
@@ -125,7 +125,7 @@ create table public.markets (
   updated_at timestamptz not null default now(),
   unique (match_id, type),
   constraint markets_quote_version_positive check (quote_version >= 1),
-  -- Диапазон 1.10–12.00 (CLAUDE.md §7); odds_milli: 2350 = 2.350.
+  -- Диапазон 1.10–12.00 (docs/requirements.md §7); odds_milli: 2350 = 2.350.
   constraint markets_home_odds_range check (home_odds_milli between 1100 and 12000),
   constraint markets_draw_odds_range check (draw_odds_milli between 1100 and 12000),
   constraint markets_away_odds_range check (away_odds_milli between 1100 and 12000),

@@ -1,4 +1,4 @@
--- Прием прогноза (CLAUDE.md §6.7, §9.1–9.2, §13.5). Этап 6. Свой поставщик pgtap-b.
+-- Прием прогноза (docs/requirements.md §6.7, §9.1–9.2, §13.5). Этап 6. Свой поставщик pgtap-b.
 begin;
 create extension if not exists pgtap with schema extensions;
 select no_plan();

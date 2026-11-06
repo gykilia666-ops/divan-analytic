@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-// CSP с nonce (CLAUDE.md §13.4): заголовок есть, нарушений нет, страницы гидрируются.
+// CSP с nonce (docs/requirements.md §13.4): заголовок есть, нарушений нет, страницы гидрируются.
 
 const PAGES = [
   "/",

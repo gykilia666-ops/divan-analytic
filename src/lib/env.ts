@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 /**
- * Валидация окружения по режимам (CLAUDE.md §13.3, §15.1).
+ * Валидация окружения по режимам (docs/requirements.md §13.3, §15.1).
  * - demo: не требует никаких ключей.
  * - connected: требует Supabase + CRON_SECRET + APP_ORIGIN.
  * - football-data: требует ключ и режим connected.

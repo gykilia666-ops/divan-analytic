@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-/** Команда клиента (CLAUDE.md §6.7). Лишние поля (userId, odds, payout…) отклоняются. */
+/** Команда клиента (docs/requirements.md §6.7). Лишние поля (userId, odds, payout…) отклоняются. */
 export const betCommandSchema = z
   .object({
     marketId: z.string().uuid(),
@@ -39,7 +39,7 @@ export const placeBetResultSchema = z.discriminatedUnion("ok", [
 ]);
 export type PlaceBetResult = z.infer<typeof placeBetResultSchema>;
 
-/** Код отказа place_bet → HTTP-статус и понятное сообщение (CLAUDE.md §11.2). */
+/** Код отказа place_bet → HTTP-статус и понятное сообщение (docs/requirements.md §11.2). */
 const ERRORS: Record<string, { status: number; message: string }> = {
   UNAUTHENTICATED: { status: 401, message: "Требуется вход" },
   VALIDATION_ERROR: { status: 400, message: "Проверьте исход и сумму" },

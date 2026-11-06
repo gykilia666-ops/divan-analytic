@@ -1,4 +1,4 @@
--- RLS и явные grants (CLAUDE.md §13.1–13.2). Этап 2.
+-- RLS и явные grants (docs/requirements.md §13.1–13.2). Этап 2.
 -- Принцип: anon и authenticated по умолчанию НЕ имеют прав; всё выдается явно.
 -- Клиент никогда не пишет wallets, wallet_entries, bets, markets, matches, user_roles.
 -- Запись выполняют только SECURITY DEFINER-функции и service_role.

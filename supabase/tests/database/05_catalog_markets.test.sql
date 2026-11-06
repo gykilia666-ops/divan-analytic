@@ -1,4 +1,4 @@
--- Каталог матчей и обслуживание рынков (CLAUDE.md §6.4, §6.6, §7). Этап 5.
+-- Каталог матчей и обслуживание рынков (docs/requirements.md §6.4, §6.6, §7). Этап 5.
 -- Свой поставщик (pgtap-c): в локальной БД могут быть данные синхронизации и других тестов.
 begin;
 create extension if not exists pgtap with schema extensions;

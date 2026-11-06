@@ -3,7 +3,7 @@ import { Pool } from "pg";
 import { afterAll, describe, expect, it } from "vitest";
 
 /**
- * Конкурентная инициализация кошелька (CLAUDE.md §6.3, §18.2).
+ * Конкурентная инициализация кошелька (docs/requirements.md §6.3, §18.2).
  * Требует запущенный локальный Supabase: `npm run db:start` (миграции применяются автоматически).
  * Пароль ниже — стандартное значение локального Supabase CLI, не секрет.
  */

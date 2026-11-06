@@ -1,4 +1,4 @@
--- RLS, grants и прямой доступ в обход Next.js (CLAUDE.md §13). Роли переключаются как в PostgREST.
+-- RLS, grants и прямой доступ в обход Next.js (docs/requirements.md §13). Роли переключаются как в PostgREST.
 -- Подсчеты ограничены своими строками: в локальной БД могут быть данные синхронизации и интеграционных тестов.
 begin;
 create extension if not exists pgtap with schema extensions;

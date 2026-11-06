@@ -4,7 +4,7 @@ import { getLeaderboard, LEADERBOARD_TTL_SECONDS } from "@/server/stats";
 
 export const dynamic = "force-dynamic";
 
-/** Публичный рейтинг (CLAUDE.md §6.10, §14.3): только безопасный DTO, общий кеш 60 секунд. */
+/** Публичный рейтинг (docs/requirements.md §6.10, §14.3): только безопасный DTO, общий кеш 60 секунд. */
 export async function GET() {
   const requestId = crypto.randomUUID();
   try {

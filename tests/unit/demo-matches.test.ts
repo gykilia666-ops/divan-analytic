@@ -12,7 +12,7 @@ const byScenario = (s: FixtureScenario) => {
   return found;
 };
 
-describe("demo fixtures (CLAUDE.md §15.3)", () => {
+describe("demo fixtures (docs/requirements.md §15.3)", () => {
   it("id уникальны", () => {
     const ids = DEMO_MATCHES.map((m) => m.id);
     expect(new Set(ids).size).toBe(ids.length);

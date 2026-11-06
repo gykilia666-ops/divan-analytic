@@ -1,5 +1,5 @@
 /**
- * Content-Security-Policy (CLAUDE.md §13.4), подогнанная под Next.js App Router и вход через GitHub:
+ * Content-Security-Policy (docs/requirements.md §13.4), подогнанная под Next.js App Router и вход через GitHub:
  * - скрипты только с nonce текущего запроса ('strict-dynamic' разрешает чанки, загружаемые ими);
  * - стили inline разрешены: Next.js и React вставляют style-атрибуты, а внешних стилей нет;
  * - form-action включает Supabase Auth и GitHub: браузер проверяет цепочку редиректов после POST /auth/login;

@@ -1,5 +1,5 @@
 /**
- * Same-origin проверка для браузерных команд (POST), CLAUDE.md §13.4.
+ * Same-origin проверка для браузерных команд (POST), docs/requirements.md §13.4.
  * Заголовок Origin обязателен: его отсутствие или значение "null" считается отказом.
  */
 export function isAllowedOrigin(

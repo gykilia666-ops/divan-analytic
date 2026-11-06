@@ -6,7 +6,7 @@ const MAX_BODY_CHARS = 5_000_000;
 export interface FootballDataClientOptions {
   token: string;
   baseUrl?: string;
-  /** Таймаут одного запроса; должен быть заметно короче бюджета задания (CLAUDE.md §10.8). */
+  /** Таймаут одного запроса; должен быть заметно короче бюджета задания (docs/requirements.md §10.8). */
   timeoutMs?: number;
   fetchImpl?: typeof fetch;
 }

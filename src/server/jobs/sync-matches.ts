@@ -2,7 +2,7 @@ import { computeSyncWindow } from "@/lib/date-range";
 import { ProviderError, type MatchDTO, type SportsProvider } from "../providers/types";
 import { buildUpsertPayload, type UpsertPayload } from "./upsert-payload";
 
-/** Внутренний бюджет запросов к поставщику (CLAUDE.md §10.5): не больше 8 в минуту. */
+/** Внутренний бюджет запросов к поставщику (docs/requirements.md §10.5): не больше 8 в минуту. */
 export const PROVIDER_REQUESTS_PER_MINUTE = 8;
 
 /** Порт хранилища: в проде — Supabase (service role), в тестах — подделка. */

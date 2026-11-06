@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 
-/** Контракты ответов API (CLAUDE.md §11.2). Приватные ответы никогда не кешируются. */
+/** Контракты ответов API (docs/requirements.md §11.2). Приватные ответы никогда не кешируются. */
 const NO_STORE = { "Cache-Control": "no-store" } as const;
 
 export function jsonOk<T>(data: T, requestId: string, status = 200) {
   return NextResponse.json({ data, meta: { requestId } }, { status, headers: NO_STORE });
 }
 
-/** Публичные данные: общий кеш (CLAUDE.md §14.3: матчи — 30 секунд, рейтинг — 60). */
+/** Публичные данные: общий кеш (docs/requirements.md §14.3: матчи — 30 секунд, рейтинг — 60). */
 export function jsonPublic<T>(
   data: T,
   meta: Record<string, unknown>,

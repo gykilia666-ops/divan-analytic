@@ -10,7 +10,7 @@ import { logEvent } from "@/server/observability/log";
 
 export const dynamic = "force-dynamic";
 
-/** Прием прогноза (CLAUDE.md §6.7, §11). Решение принимает place_bet в БД. */
+/** Прием прогноза (docs/requirements.md §6.7, §11). Решение принимает place_bet в БД. */
 export async function POST(request: NextRequest) {
   const requestId = crypto.randomUUID();
   const env = getEnv();

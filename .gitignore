@@ -12,3 +12,7 @@ next-env.d.ts
 .vercel
 .DS_Store
 .verify
+
+# Локальный рабочий контекст ИИ-ассистента (не часть проекта)
+CLAUDE.md
+.claude/

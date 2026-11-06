@@ -11,7 +11,7 @@ type Guarded =
   | { ok: false; response: NextResponse };
 
 /**
- * Серверная проверка роли для admin API (CLAUDE.md §12, §13.1): demo → 404, гость → 401,
+ * Серверная проверка роли для admin API (docs/requirements.md §12, §13.1): demo → 404, гость → 401,
  * не администратор → 403. Роль проверяется в БД при каждом запросе, без кеша.
  */
 export async function guardAdmin(requestId: string): Promise<Guarded> {

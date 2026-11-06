@@ -1,4 +1,4 @@
--- Синхронизация матчей и лимитер поставщика (CLAUDE.md §10). Этап 4.
+-- Синхронизация матчей и лимитер поставщика (docs/requirements.md §10). Этап 4.
 -- Свое имя поставщика (pgtap-fd), чтобы не пересекаться с данными реальной синхронизации.
 begin;
 create extension if not exists pgtap with schema extensions;
